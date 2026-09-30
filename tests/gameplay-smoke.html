@@ -24,12 +24,14 @@ const { HandOverlay } = await import('../js/overlay.js');
 const { GameAudio } = await import('../js/audio.js');
 const { GameFeedback } = await import('../js/feedback.js');
 const { GameLoop } = await import('../js/game-loop.js');
-const { elements, renderState, renderScores, renderRound, flashScore, announceLevel, clearFeedback, renderSound } = await import('../js/ui.js');
+const { elements, renderState, renderScores, renderRound, flashScore, announceLevel, clearFeedback, renderSound, renderModeSelection } = await import('../js/ui.js');
 const overlay = new HandOverlay(elements.canvas, { videoWidth: 800, videoHeight: 600 });
 const audio = new GameAudio();
 const feedback = new GameFeedback(audio, flashScore, announceLevel);
 let present = true;
 let state = 'idle';
+let selectedMode = 'normal';
+const bests = { easy: 0, normal: 0, hard: 0, timed: 0 };
 let best = 0;
 let previousBest = 0;
 const loop = new GameLoop(overlay, (next, details) => {
@@ -37,7 +39,7 @@ const loop = new GameLoop(overlay, (next, details) => {
   renderRound(state, details, best, previousBest);
   feedback.update(state, details);
   if (['paused', 'game-over', 'life-lost'].includes(state)) clearFeedback();
-}, (score) => { best = Math.max(best, score); renderScores(score, best); });
+}, (score) => { best = Math.max(best, score); bests[selectedMode] = best; renderScores(score, best); });
 function start() {
   feedback.reset();
   clearFeedback();
@@ -46,11 +48,11 @@ function start() {
   previousBest = best;
   state = 'waiting';
   renderState(state);
-  loop.start();
+  loop.start(selectedMode);
 }
 elements.start.onclick = () => {
   if (state === 'idle') start();
-  else { loop.stop(); feedback.reset(); clearFeedback(); state = 'idle'; renderState(state); }
+  else { loop.stop(); feedback.reset(); clearFeedback(); state = 'idle'; renderState(state); renderModeSelection(selectedMode, (id) => bests[id]); }
 };
 elements.restart.onclick = start;
 elements.pause.onclick = () => loop.paused ? loop.resume() : loop.pause();
@@ -69,6 +71,14 @@ const timer = setInterval(() => {
   loop.setHand(present ? { keypoints: [{ name: 'index_finger_tip', x: 400, y: 470 }] } : null);
 }, 50);
 window.addEventListener('pagehide', () => { clearInterval(timer); loop.stop(); audio.mute(); });
+document.querySelector('#mode-options').onchange = (event) => {
+  if (state !== 'idle') return;
+  selectedMode = event.target.value;
+  best = bests[selectedMode];
+  renderModeSelection(selectedMode, (id) => bests[id]);
+  renderScores(0, best);
+};
+renderModeSelection(selectedMode, (id) => bests[id]);
 renderScores(0, 0);
 renderState('idle');
 renderSound(true);

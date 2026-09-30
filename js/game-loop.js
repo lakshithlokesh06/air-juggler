@@ -7,6 +7,8 @@ export class GameLoop {
     this.onState = onState;
     this.onScore = onScore;
     this.game = new BallGame();
+    this.remainingTime = null;
+    this.clockStarted = false;
     this.running = false;
     this.paused = false;
     this.countdown = null;
@@ -25,15 +27,22 @@ export class GameLoop {
     this.onState(state, {
       score: this.game.score,
       lives: this.game.lives,
+      mode: this.game.mode.id,
+      maxLives: this.game.mode.lives,
+      remainingTime: this.remainingTime,
+      misses: this.game.misses,
+      endReason: this.game.endReason,
       powerUp: this.game.powerUps.snapshot(),
       level: difficultyForScore(this.game.score).level,
       countdown: this.countdown === null ? null : Math.ceil(this.countdown),
     });
   }
 
-  start() {
+  start(modeId = this.game.mode.id) {
     this.stop();
-    this.game.reset(this.arenaWidth());
+    this.game.reset(this.arenaWidth(), modeId);
+    this.remainingTime = this.game.mode.seconds;
+    this.clockStarted = false;
     this.running = true;
     this.previousTime = null;
     this.onScore(0);
@@ -75,6 +84,22 @@ export class GameLoop {
     this.game.resize(this.arenaWidth());
     const hand = time - this.handTime < 250 ? this.hand : null;
     const finger = this.overlay.controlPoint(hand);
+    // The challenge clock uses elapsed time, not capped/slowed physics time.
+    // It includes recovery and later countdowns but excludes the initial setup.
+    if (this.clockStarted && this.remainingTime !== null) {
+      this.remainingTime = Math.max(0, this.remainingTime - dt);
+      if (this.remainingTime <= 0.000001) {
+        this.remainingTime = 0;
+        this.game.status = 'over';
+        this.game.endReason = 'time';
+        this.game.powerUps.clear();
+        this.running = false;
+        this.countdown = null;
+        this.overlay.clear();
+        this.notify('game-over');
+        return;
+      }
+    }
     let state;
     if (this.game.status === 'life-lost') {
       this.recovery = Math.max(0, this.recovery - Math.min(dt, 0.1));
@@ -93,6 +118,7 @@ export class GameLoop {
         state = 'countdown';
         if (this.countdown === 0) {
           this.game.start(finger);
+          this.clockStarted = true;
           this.countdown = null;
           state = 'playing';
         }

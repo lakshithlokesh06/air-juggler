@@ -5,7 +5,7 @@ import { readHighScore, saveHighScore } from './score.js';
 import { GameAudio } from './audio.js';
 import { GameFeedback } from './feedback.js';
 import { GameLoop } from './game-loop.js';
-import { elements, renderScores, renderState, renderRound, flashScore, announceLevel, clearFeedback, renderSound } from './ui.js';
+import { elements, renderScores, renderState, renderRound, flashScore, announceLevel, clearFeedback, renderSound, renderModeSelection } from './ui.js';
 
 const audio = new GameAudio();
 const feedback = new GameFeedback(audio, flashScore, announceLevel);
@@ -13,7 +13,8 @@ let state = 'idle';
 let requestId = 0;
 let tracker = null;
 const overlay = new HandOverlay(elements.canvas, elements.video);
-let highScore = readHighScore();
+let selectedMode = 'normal';
+let highScore = readHighScore(selectedMode);
 let roundBest = highScore;
 const gameLoop = new GameLoop(overlay, (nextState, details) => {
   setState(nextState);
@@ -21,7 +22,7 @@ const gameLoop = new GameLoop(overlay, (nextState, details) => {
   feedback.update(nextState, details);
   if (nextState === 'paused' || nextState === 'game-over' || nextState === 'life-lost') clearFeedback();
 }, (score) => {
-  if (score > highScore) highScore = saveHighScore(score);
+  if (score > highScore) highScore = saveHighScore(score, selectedMode);
   renderScores(score, highScore);
 });
 const camera = new Camera(elements.video, () => {
@@ -43,6 +44,7 @@ function stopCamera() {
   feedback.reset();
   clearFeedback();
   setState('idle');
+  renderModeSelection(selectedMode, readHighScore);
 }
 
 function fail(message) {
@@ -73,7 +75,7 @@ async function startCamera() {
     roundBest = highScore;
     feedback.reset();
     clearFeedback();
-    gameLoop.start();
+    gameLoop.start(selectedMode);
     if (document.hidden) {
       audio.silence();
       gameLoop.pause();
@@ -96,7 +98,7 @@ elements.restart.addEventListener('click', () => {
     roundBest = highScore;
     feedback.reset();
     clearFeedback();
-    gameLoop.start();
+    gameLoop.start(selectedMode);
   }
   else startCamera();
 });
@@ -137,6 +139,15 @@ document.addEventListener('visibilitychange', () => {
     gameLoop.pause();
   }
 });
-renderScores(0, readHighScore());
+document.querySelector('#mode-options').addEventListener('change', (event) => {
+  if (!['idle', 'error'].includes(state) || event.target.name !== 'game-mode') return;
+  selectedMode = event.target.value;
+  highScore = readHighScore(selectedMode);
+  roundBest = highScore;
+  renderModeSelection(selectedMode, readHighScore);
+  renderScores(0, highScore);
+});
+renderModeSelection(selectedMode, readHighScore);
+renderScores(0, highScore);
 renderState('idle');
 renderSound(true);
