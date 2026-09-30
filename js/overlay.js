@@ -16,13 +16,15 @@ export class HandOverlay {
     this.context = canvas.getContext('2d');
     this.hand = null;
     this.ball = null;
+    this.options = {};
     this.effect = null;
     this.reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-    this.resizeObserver = new ResizeObserver(() => this.draw(this.hand, this.ball));
+    this.resizeObserver = new ResizeObserver(() => this.draw(this.hand, this.ball, 0, this.options));
     this.resizeObserver.observe(canvas);
   }
 
-  draw(hand, ball = null, dt = 0) {
+  draw(hand, ball = null, dt = 0, options = {}) {
+    this.options = options;
     this.hand = hand;
     this.ball = ball;
     const { width, height } = this.canvas.getBoundingClientRect();
@@ -75,7 +77,7 @@ export class HandOverlay {
     if (!tip) return;
     const { x, y } = map(tip);
     ctx.beginPath();
-    ctx.arc(x, y, FINGER_RADIUS * height / ARENA_HEIGHT, 0, Math.PI * 2);
+    ctx.arc(x, y, (options.fingerRadius ?? FINGER_RADIUS) * height / ARENA_HEIGHT, 0, Math.PI * 2);
     ctx.fillStyle = 'rgba(30, 43, 38, 0.6)';
     ctx.fill();
     ctx.lineWidth = 3;

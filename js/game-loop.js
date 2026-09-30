@@ -10,6 +10,7 @@ export class GameLoop {
     this.running = false;
     this.paused = false;
     this.countdown = null;
+    this.recovery = 0;
     this.hand = null;
     this.handTime = 0;
     this.frame = null;
@@ -23,6 +24,8 @@ export class GameLoop {
   notify(state) {
     this.onState(state, {
       score: this.game.score,
+      lives: this.game.lives,
+      powerUp: this.game.powerUps.snapshot(),
       level: difficultyForScore(this.game.score).level,
       countdown: this.countdown === null ? null : Math.ceil(this.countdown),
     });
@@ -56,7 +59,7 @@ export class GameLoop {
     this.previousTime = null;
     this.hand = null;
     this.handTime = 0;
-    this.notify(this.game.status === 'waiting' ? 'waiting' : 'no-hand');
+    this.notify(this.game.status === 'life-lost' ? 'life-lost' : this.game.status === 'waiting' ? 'waiting' : 'no-hand');
     this.schedule();
   }
 
@@ -73,7 +76,14 @@ export class GameLoop {
     const hand = time - this.handTime < 250 ? this.hand : null;
     const finger = this.overlay.controlPoint(hand);
     let state;
-    if (this.game.status === 'waiting') {
+    if (this.game.status === 'life-lost') {
+      this.recovery = Math.max(0, this.recovery - Math.min(dt, 0.1));
+      state = 'life-lost';
+      if (this.recovery === 0) {
+        this.game.prepareLife();
+        state = 'waiting';
+      }
+    } else if (this.game.status === 'waiting') {
       if (!finger) {
         // Losing the hand before launch resets the countdown for a fair start.
         this.countdown = null;
@@ -94,9 +104,15 @@ export class GameLoop {
         this.overlay.bounce?.(this.game.ball);
         this.onScore(this.game.score);
       }
-      state = this.game.status === 'over' ? 'game-over' : finger ? 'playing' : 'no-hand';
+      if (this.game.status === 'life-lost') {
+        this.recovery = 1;
+        this.countdown = null;
+        state = 'life-lost';
+      } else {
+        state = this.game.status === 'over' ? 'game-over' : finger ? 'playing' : 'no-hand';
+      }
     }
-    this.overlay.draw(hand, this.game.ball, Math.min(dt, 0.05));
+    this.overlay.draw(hand, ['over', 'life-lost'].includes(this.game.status) ? null : this.game.ball, Math.min(dt, 0.05), { fingerRadius: this.game.fingerRadius });
     if (this.game.status === 'over') this.running = false;
     this.notify(state);
     if (this.running) this.schedule();
@@ -106,6 +122,8 @@ export class GameLoop {
     this.running = false;
     this.paused = false;
     this.countdown = null;
+    this.recovery = 0;
+    this.game.powerUps.clear();
     cancelAnimationFrame(this.frame);
     this.hand = null;
     this.handTime = 0;

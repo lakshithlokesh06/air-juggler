@@ -16,6 +16,9 @@ banner.textContent = 'TEST MODE · Synthetic fingertip · No camera or saved sco
 const remove = document.createElement('button');
 remove.textContent = 'Remove test hand';
 banner.append(remove);
+const drop = document.createElement('button');
+drop.textContent = 'Drop test ball';
+banner.append(drop);
 document.body.prepend(banner);
 const { HandOverlay } = await import('../js/overlay.js');
 const { GameAudio } = await import('../js/audio.js');
@@ -33,12 +36,13 @@ const loop = new GameLoop(overlay, (next, details) => {
   if (state !== next) { state = next; renderState(state); }
   renderRound(state, details, best, previousBest);
   feedback.update(state, details);
-  if (['paused', 'game-over'].includes(state)) clearFeedback();
+  if (['paused', 'game-over', 'life-lost'].includes(state)) clearFeedback();
 }, (score) => { best = Math.max(best, score); renderScores(score, best); });
 function start() {
   feedback.reset();
   clearFeedback();
   present = true;
+  remove.textContent = 'Remove test hand';
   previousBest = best;
   state = 'waiting';
   renderState(state);
@@ -56,7 +60,11 @@ elements.sound.onclick = async () => {
     renderSound(audio.muted, !enabled);
   } else { audio.mute(); renderSound(true); }
 };
-remove.onclick = () => { present = false; };
+remove.onclick = () => {
+  present = !present;
+  remove.textContent = present ? 'Remove test hand' : 'Restore test hand';
+};
+drop.onclick = () => { if (loop.game.status === 'playing') loop.game.ball.y = 650; };
 const timer = setInterval(() => {
   loop.setHand(present ? { keypoints: [{ name: 'index_finger_tip', x: 400, y: 470 }] } : null);
 }, 50);

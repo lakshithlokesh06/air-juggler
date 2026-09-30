@@ -19,7 +19,7 @@ const gameLoop = new GameLoop(overlay, (nextState, details) => {
   setState(nextState);
   renderRound(nextState, details, highScore, roundBest);
   feedback.update(nextState, details);
-  if (nextState === 'paused' || nextState === 'game-over') clearFeedback();
+  if (nextState === 'paused' || nextState === 'game-over' || nextState === 'life-lost') clearFeedback();
 }, (score) => {
   if (score > highScore) highScore = saveHighScore(score);
   renderScores(score, highScore);
@@ -75,9 +75,9 @@ async function startCamera() {
     clearFeedback();
     gameLoop.start();
     if (document.hidden) {
-    audio.silence();
-    gameLoop.pause();
-  }
+      audio.silence();
+      gameLoop.pause();
+    }
     session.start();
   } catch (error) {
     if (currentRequest !== requestId) return;

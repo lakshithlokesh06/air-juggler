@@ -68,8 +68,9 @@ test('upward contact, a hand above the ball, and no hand do not score', () => {
   }
 });
 
-test('falling fully below the arena ends the round and freezes scoring', () => {
+test('falling below the arena on the last life ends the round and freezes scoring', () => {
   const game = playing();
+  game.lives = 1;
   for (let i = 0; i < 120; i++) game.advance(1 / 60, null);
   assert.equal(game.status, 'over');
   const y = game.ball.y;
@@ -210,10 +211,77 @@ test('pause freezes physics and score; game-over cannot resume', () => {
   loop.resume();
   frame(70000);
   assert.deepEqual(loop.game.ball, frozen);
+  loop.game.lives = 1;
   loop.game.ball.y = 650;
   frame(70050, null);
   assert.equal(loop.running, false);
   loop.pause();
   loop.resume();
   assert.equal(loop.running, false);
+});
+
+
+test('three misses consume exactly three lives while preserving score', () => {
+  const game = playing();
+  game.score = 7;
+  for (const lives of [2, 1, 0]) {
+    game.ball.y = 650;
+    game.advance(0.05, null);
+    assert.equal(game.lives, lives);
+    assert.equal(game.score, 7);
+    assert.equal(game.status, lives ? 'life-lost' : 'over');
+    game.advance(0.05, null);
+    assert.equal(game.lives, lives, 'one miss cannot drain multiple lives');
+    if (lives) {
+      game.prepareLife();
+      assert.equal(game.ball.y, 100);
+      assert.equal(game.ball.vy, 0);
+      assert.equal(game.contact, false);
+      game.start({ x: 400, y: 470 });
+    }
+  }
+  game.prepareLife();
+  assert.equal(game.status, 'over');
+  game.reset();
+  assert.equal(game.lives, 3);
+  assert.equal(game.score, 0);
+});
+
+test('life reset waits, supports pause, then requires a fresh countdown', () => {
+  const { loop, frame, states } = loopHarness();
+  loop.game.start({ x: 400, y: 470 });
+  frame(0);
+  loop.game.ball.y = 650;
+  frame(50, null);
+  assert.equal(states.at(-1).state, 'life-lost');
+  assert.equal(loop.game.lives, 2);
+  loop.pause();
+  frame(10000);
+  assert.equal(loop.recovery, 1);
+  loop.resume();
+  frame(20000, null);
+  for (let time = 20100; time <= 21200; time += 100) frame(time, null);
+  assert.equal(loop.game.status, 'waiting');
+  assert.equal(loop.countdown, null);
+  frame(21250);
+  assert.equal(loop.countdown, 3);
+  assert.equal(loop.game.lives, 2);
+  loop.stop();
+});
+
+test('pause freezes power-up duration and restart removes effects', () => {
+  const { loop, frame } = loopHarness();
+  loop.game.start({ x: 400, y: 470 });
+  loop.game.powerUps.award(8);
+  frame(0);
+  loop.pause();
+  frame(20000);
+  assert.equal(loop.game.powerUps.remaining, 6);
+  loop.resume();
+  frame(30000);
+  assert.equal(loop.game.powerUps.remaining, 6);
+  loop.start();
+  assert.equal(loop.game.powerUps.type, null);
+  assert.equal(loop.game.powerUps.nextScore, 8);
+  loop.stop();
 });
