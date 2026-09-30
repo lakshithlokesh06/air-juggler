@@ -4,6 +4,7 @@ export class Camera {
     this.video = video;
     this.onEnded = onEnded;
     this.stream = null;
+    this.requestId = 0;
   }
 
   async start() {
@@ -14,10 +15,17 @@ export class Camera {
       throw new Error('This browser does not support camera access. Try a current Chrome, Firefox, Edge, or Safari browser.');
     }
     this.stop();
-    this.stream = await navigator.mediaDevices.getUserMedia({
+    const requestId = this.requestId;
+    const stream = await navigator.mediaDevices.getUserMedia({
       audio: false,
       video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
     });
+    // Permission may resolve after Stop or a newer camera request.
+    if (requestId !== this.requestId) {
+      stream.getTracks().forEach((track) => track.stop());
+      return;
+    }
+    this.stream = stream;
     this.stream.getVideoTracks().forEach((track) => {
       track.addEventListener('ended', () => this.onEnded(), { once: true });
     });
@@ -25,12 +33,13 @@ export class Camera {
     try {
       await this.video.play();
     } catch (error) {
-      this.stop();
+      if (requestId === this.requestId) this.stop();
       throw error;
     }
   }
 
   stop() {
+    this.requestId += 1;
     this.stream?.getTracks().forEach((track) => track.stop());
     this.stream = null;
     this.video.srcObject = null;

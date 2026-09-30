@@ -813,3 +813,39 @@ h1 svg {
   }
 }
 
+
+/* Tracking overlays share the preview's exact content area. */
+.stage canvas {
+  object-fit: fill;
+  z-index: 1;
+}
+.live-caption > #tracking-message {
+  display: inline;
+  width: auto;
+  height: auto;
+  border-radius: 0;
+  background: none;
+  margin: 0;
+}
+.stage[data-state="model-loading"] .stage-message {
+  background: rgba(30, 43, 38, 0.94);
+  border-radius: 16px;
+  margin: 16px;
+}
+.stage[data-state="model-loading"] .camera-icon {
+  animation: pulse 1.3s ease-in-out infinite;
+}
+.stage[data-state="tracking"] .stage-coordinate,
+.stage[data-state="no-hand"] .stage-coordinate {
+  display: none;
+}
+.status-dot[data-state="tracking"] {
+  background: #709b3a;
+}
+.status-dot[data-state="no-hand"],
+.status-dot[data-state="model-loading"] {
+  background: #b78b35;
+}
+@media (prefers-reduced-motion: reduce) {
+  .stage[data-state="model-loading"] .camera-icon { animation: none; }
+}

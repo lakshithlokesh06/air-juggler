@@ -14,7 +14,7 @@
   <div class="page-shell">
     <header class="site-header">
       <a class="brand" href="./" aria-label="Air Juggler home"><span class="brand-mark" aria-hidden="true">aj<span>•</span></span> AIR JUGGLER</a>
-      <span class="build-tag"><span></span> THE PLAYGROUND / V0.1</span>
+      <span class="build-tag"><span></span> THE PLAYGROUND / V0.2</span>
     </header>
     <main>
       <section class="intro" aria-labelledby="page-title">
@@ -26,7 +26,7 @@
           <div class="stage-toolbar"><span><span class="status-dot" id="status-dot"></span><span id="camera-status">CAMERA OFF</span></span><span class="stage-label">YOUR PLAY SPACE <span aria-hidden="true">↗</span></span></div>
           <div class="stage" id="stage" data-state="idle">
             <video id="webcam" autoplay muted playsinline aria-label="Mirrored live webcam preview" hidden></video>
-            <canvas id="game-canvas" width="1280" height="720" aria-label="Canvas reserved for future gameplay" hidden></canvas>
+            <canvas id="game-canvas" width="1280" height="720" aria-label="Live hand landmarks and index fingertip marker" hidden></canvas>
             <div class="stage-grid" aria-hidden="true"></div>
             <span class="corner top-left" aria-hidden="true"></span><span class="corner top-right" aria-hidden="true"></span><span class="corner bottom-left" aria-hidden="true"></span><span class="corner bottom-right" aria-hidden="true"></span>
             <div class="stage-message" id="stage-message" role="status" aria-live="polite" aria-atomic="true">
@@ -34,7 +34,7 @@
               <h2 id="state-title">Your stage is waiting.</h2><p id="state-description">Enable your camera to step into the frame.<br>A little room to move is all you need.</p>
               <span class="preview-tag">CAMERA PREVIEW</span>
             </div>
-            <div class="live-caption" id="live-caption" hidden><span></span> Looking good. Your camera is ready.</div>
+            <div class="live-caption" id="live-caption" role="status" aria-live="polite" aria-atomic="true" hidden><span aria-hidden="true"></span><span id="tracking-message"></span></div>
             <span class="stage-coordinate" aria-hidden="true">AJ / 001</span>
           </div>
           <div class="stage-footer"><span><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m10 2 6 3v5c0 4-6 7-6 7s-6-3-6-7V5z"/><path d="m7 9 2 2 4-4"/></svg> Your camera stays in your browser.</span><span>NO RECORDING. JUST YOU.</span></div>
@@ -42,12 +42,12 @@
         <aside class="control-panel" aria-label="Score and controls">
           <div class="score-card"><div class="score-heading"><h2>THE SCOREBOARD</h2><span aria-hidden="true">↗</span></div><p class="score-label">Current score</p><p class="score-value" id="score">00</p><div class="high-score"><span><span aria-hidden="true">✦</span> Personal best</span><strong id="high-score">00</strong></div></div>
           <div class="action-card"><button class="button button-primary" id="start-button" type="button"><span id="start-label">Start camera</span><span aria-hidden="true">↗</span></button><button class="button button-secondary" id="restart-button" type="button" disabled><span aria-hidden="true">↻</span> Restart</button><p id="control-hint">Camera permission is requested when you start.</p></div>
-          <div class="coming-card"><span class="small-label">UP NEXT</span><h3>Hands in. Game on.</h3><p>Hand tracking and juggling are on the way. For now, find your frame.</p><span class="development-tag"><span></span> FOUNDATION BUILD</span></div>
+          <div class="coming-card"><span class="small-label">UP NEXT</span><h3>Hands in. Game on.</h3><p>Follow your fingertip in real time. Ball physics and juggling are coming next.</p><span class="development-tag"><span></span> HAND TRACKING BUILD</span></div>
         </aside>
       </section>
       <section class="setup-guide" aria-labelledby="guide-title"><h2 id="guide-title">GOOD TO KNOW<br><span>Before you jump in.</span></h2><div><span class="step-number">01</span><h3>Let there be light.</h3><p>A well-lit space helps your camera see you clearly.</p></div><div><span class="step-number">02</span><h3>Make some room.</h3><p>Step back and keep your hands inside the frame.</p></div><div><span class="step-number">03</span><h3>You’re in control.</h3><p>Stop the camera anytime. Nothing is uploaded.</p></div></section>
     </main>
-    <footer class="site-footer"><span>AIR JUGGLER <span class="footer-divider">/</span> MADE TO MOVE.</span><span>JavaScript today. TensorFlow.js next.</span></footer>
+    <footer class="site-footer"><span>AIR JUGGLER <span class="footer-divider">/</span> MADE TO MOVE.</span><span>Powered by JavaScript &amp; TensorFlow.js.</span></footer>
   </div>
 </body>
 </html>

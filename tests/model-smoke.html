@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Air Juggler model smoke test</title>
+<h1>Model smoke test</h1>
+<p id="result" role="status">Loading the real TensorFlow.js detector…</p>
+<canvas id="input" width="640" height="480" hidden></canvas>
+<script type="module">
+  import { HandTracker } from '../js/tracking.js';
+  const result = document.querySelector('#result');
+  const tracker = new HandTracker(null, () => {}, () => {});
+  try {
+    await tracker.load();
+    const input = document.querySelector('#input');
+    const context = input.getContext('2d');
+    context.fillStyle = '#202b28';
+    context.fillRect(0, 0, input.width, input.height);
+    const hands = await tracker.detector.estimateHands(input, { flipHorizontal: false });
+    if (hands.length !== 0) throw new Error('Unexpected detection on a blank canvas.');
+    result.textContent = `PASS: real model loaded; blank-frame inference returned no hands. Backend: ${window.tf.getBackend()}.`;
+  } catch (error) {
+    result.textContent = `FAIL: ${error.message}`;
+  } finally {
+    tracker.stop();
+  }
+</script>
+</html>
