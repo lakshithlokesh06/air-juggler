@@ -1,3 +1,4 @@
+import { MODES, getMode } from './modes.js';
 import { formatScore } from './score.js';
 
 export const elements = {
@@ -18,7 +19,7 @@ const copy = {
   paused: ['PAUSED', 'Take a breather.', 'Your ball and score are safe. Resume when you’re ready.', 'Stop', 'Camera stays on while paused. Resume with the button or P.'],
   playing: ['IN PLAY', '', '', 'Stop', 'Meet the falling ball from below with your index fingertip.'],
   'life-lost': ['LIFE LOST', 'Take a breath. You’re still in.', 'Your score is safe. Get your fingertip ready for the next countdown.', 'Stop', 'Resetting the ball. Your next attempt starts after 3–2–1.'],
-  'game-over': ['GAME OVER', 'Nice run. Go again?', 'All three lives used. Press Restart for a fresh round.', 'Stop', 'Your final score is on the scoreboard. Restart to play again.'],
+  'game-over': ['GAME OVER', 'Nice run. Go again?', 'All lives used. Press Restart for a fresh round.', 'Stop', 'Your final score is on the scoreboard. Restart to play again.'],
   'no-hand': ['NO HAND DETECTED', '', '', 'Stop', 'Hand lost — bring your fingertip back. The ball keeps moving.'],
   error: ['SETUP ERROR', 'Let’s get you back on track.', '', 'Try again', 'Check the message above, then try again.'],
 };
@@ -26,6 +27,7 @@ const copy = {
 export function renderState(state, errorMessage = '') {
   const [status, title, description, button, hint] = copy[state];
   const active = ['waiting', 'countdown', 'paused', 'playing', 'no-hand', 'life-lost', 'game-over'].includes(state);
+  document.querySelector('#mode-selection').hidden = state !== 'idle' && state !== 'error';
   const loading = state === 'loading' || state === 'model-loading';
   document.querySelector('#stage').dataset.state = state;
   document.querySelector('#stage').setAttribute('aria-busy', String(loading));
@@ -48,7 +50,7 @@ export function renderState(state, errorMessage = '') {
   document.querySelector('#countdown').hidden = state !== 'countdown';
   document.querySelector('#round-result').hidden = state !== 'game-over';
   if (!active) {
-    setText('#power-label', 'Boosts arrive every 8 points');
+    setText('#power-label', 'Choose your challenge before starting');
     setText('#power-time', '');
     document.querySelector('#power-status').dataset.active = 'false';
   }
@@ -66,19 +68,30 @@ function setText(selector, text) {
 }
 
 export function renderRound(state, details, highScore, previousBest) {
-  setText('#lives', `${details.lives} / 3 lives`);
+  const mode = getMode(details.mode);
+  setText('#current-mode', mode.name);
+  setText('#lives', mode.lives === null ? `Unlimited attempts · ${details.misses} ${details.misses === 1 ? 'miss' : 'misses'}` : `${details.lives} / ${mode.lives} lives`);
+  const timer = document.querySelector('#challenge-timer');
+  timer.hidden = details.remainingTime === null;
+  if (details.remainingTime !== null) {
+    const seconds = Math.ceil(details.remainingTime);
+    setText('#challenge-timer', `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}${state === 'paused' ? ' · paused' : ''}`);
+    timer.dataset.urgent = String(seconds <= 10);
+  }
   const power = details.powerUp;
   const powerName = power.type === 'slow-motion' ? 'Slow motion · 65% speed' : 'Wide touch · 2× reach';
   setText('#power-label', power.type ? powerName : `Next boost at ${power.nextScore} points`);
   setText('#power-time', power.type ? `${Math.ceil(power.remaining)}s${state === 'paused' ? ' · paused' : ''}` : '');
   document.querySelector('#power-status').dataset.active = String(Boolean(power.type));
-  if (state === 'life-lost') setText('#state-title', `${details.lives} ${details.lives === 1 ? 'life' : 'lives'} left. Keep going.`);
+  if (state === 'life-lost' && mode.lives === null) setText('#camera-status', 'BALL MISSED');
+  if (state === 'life-lost') setText('#state-title', mode.lives === null ? 'Reset and go. The clock is running.' : `${details.lives} ${details.lives === 1 ? 'life' : 'lives'} left. Keep going.`);
   setText('#level', `LEVEL ${details.level} / 6`);
   if (state === 'countdown') setText('#countdown', String(details.countdown));
   if (state === 'game-over') {
+    setText('#state-description', details.endReason === 'time' ? 'Time’s up! Your 60-second challenge is complete.' : 'All lives used. Restart this mode or Stop to choose another.');
     setText('#final-score', formatScore(details.score));
     setText('#result-caption', details.score > previousBest ? 'NEW PERSONAL BEST' : 'FINAL SCORE');
-    setText('#result-detail', `${details.score} ${details.score === 1 ? 'bounce' : 'bounces'} · Level ${details.level} · Best ${highScore}`);
+    setText('#result-detail', `${mode.name} · ${details.score} ${details.score === 1 ? 'bounce' : 'bounces'} · Level ${details.level} · Best ${highScore}`);
     setText('#state-title', details.score > previousBest ? 'A new best. Nicely done.' : details.score ? 'Nice run. Go again?' : 'You’ve got this. Try again.');
   }
 }
@@ -114,4 +127,39 @@ export function renderSound(muted, unavailable = false) {
   document.querySelector('#sound-status').textContent = unavailable
     ? 'Audio is unavailable or blocked. You can keep playing silently.'
     : muted ? 'Optional sound effects are muted.' : 'Sound effects enabled. Select Sound on to mute.';
+}
+
+export function renderModeSelection(selectedMode, readBest) {
+  const options = document.querySelector('#mode-options');
+  if (!options.children.length) {
+    for (const mode of Object.values(MODES)) {
+      const label = document.createElement('label');
+      label.className = 'mode-option';
+      const input = document.createElement('input');
+      input.type = 'radio';
+      input.name = 'game-mode';
+      input.value = mode.id;
+      input.setAttribute('aria-describedby', `mode-description-${mode.id}`);
+      const title = document.createElement('strong');
+      title.textContent = mode.name;
+      const description = document.createElement('span');
+      description.id = `mode-description-${mode.id}`;
+      description.textContent = mode.description;
+      const best = document.createElement('small');
+      best.dataset.bestMode = mode.id;
+      label.append(input, title, description, best);
+      options.append(label);
+    }
+  }
+  for (const input of options.querySelectorAll('input')) input.checked = input.value === selectedMode;
+  for (const best of options.querySelectorAll('[data-best-mode]')) best.textContent = `BEST ${formatScore(readBest(best.dataset.bestMode))}`;
+  const mode = getMode(selectedMode);
+  setText('#mode-description', `${mode.name}: ${mode.description}. Stop returns here to change mode.`);
+  setText('#current-mode', mode.name);
+  setText('#lives', mode.lives === null ? 'Unlimited attempts' : `${mode.lives} / ${mode.lives} lives`);
+  setText('#level', 'LEVEL 1 / 6');
+  const timer = document.querySelector('#challenge-timer');
+  timer.hidden = mode.seconds === null;
+  timer.dataset.urgent = 'false';
+  setText('#challenge-timer', '01:00');
 }
