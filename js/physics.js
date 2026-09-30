@@ -6,6 +6,13 @@ const GRAVITY = 780;
 const BOUNCE_SPEED = 560;
 const STEP = 1 / 120;
 
+/** Every five bounces increases pace; cap it to keep the game playable. */
+export function difficultyForScore(score) {
+  const level = Math.min(6, 1 + Math.floor(Math.max(0, score) / 5));
+  const pace = 1 + (level - 1) * 0.12;
+  return { level, gravity: GRAVITY * pace, bounceSpeed: BOUNCE_SPEED * Math.sqrt(pace) };
+}
+
 export class BallGame {
   constructor(width = 800) {
     this.reset(width);
@@ -45,9 +52,10 @@ export class BallGame {
 
   step(dt, finger) {
     const ball = this.ball;
+    const difficulty = difficultyForScore(this.score);
     this.cooldown = Math.max(0, this.cooldown - dt);
-    ball.y += ball.vy * dt + 0.5 * GRAVITY * dt * dt;
-    ball.vy += GRAVITY * dt;
+    ball.y += ball.vy * dt + 0.5 * difficulty.gravity * dt * dt;
+    ball.vy += difficulty.gravity * dt;
     ball.x += ball.vx * dt;
     if (ball.x < ball.radius || ball.x > this.width - ball.radius) {
       ball.x = Math.max(ball.radius, Math.min(this.width - ball.radius, ball.x));
@@ -63,7 +71,7 @@ export class BallGame {
     // Separate before rearming. A cooldown also rejects jitter after contact.
     if (distance > ball.radius + FINGER_RADIUS + 8) this.contact = false;
     if (touching && !this.contact && this.cooldown === 0 && ball.vy > 0 && finger.y >= ball.y) {
-      ball.vy = -BOUNCE_SPEED;
+      ball.vy = -difficultyForScore(this.score + 1).bounceSpeed;
       ball.vx = Math.max(-180, Math.min(180, (ball.x - finger.x) * 7));
       this.score += 1;
       this.contact = true;

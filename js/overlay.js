@@ -16,11 +16,13 @@ export class HandOverlay {
     this.context = canvas.getContext('2d');
     this.hand = null;
     this.ball = null;
+    this.effect = null;
+    this.reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
     this.resizeObserver = new ResizeObserver(() => this.draw(this.hand, this.ball));
     this.resizeObserver.observe(canvas);
   }
 
-  draw(hand, ball = null) {
+  draw(hand, ball = null, dt = 0) {
     this.hand = hand;
     this.ball = ball;
     const { width, height } = this.canvas.getBoundingClientRect();
@@ -33,11 +35,24 @@ export class HandOverlay {
     if (!ctx || !width || !height || !this.video.videoWidth) return;
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
     ctx.clearRect(0, 0, width, height);
+    if (this.effect) {
+      this.effect.remaining -= dt;
+      if (this.effect.remaining <= 0) this.effect = null;
+    }
+    if (this.effect && !this.reducedMotion.matches) {
+      const scale = height / ARENA_HEIGHT;
+      const progress = 1 - this.effect.remaining / 0.35;
+      ctx.beginPath();
+      ctx.arc(this.effect.x * scale, this.effect.y * scale, (24 + progress * 26) * scale, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(215, 250, 118, ${0.6 * (1 - progress)})`;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
     if (ball) {
       const scale = height / ARENA_HEIGHT;
       ctx.beginPath();
       ctx.arc(ball.x * scale, ball.y * scale, ball.radius * scale, 0, Math.PI * 2);
-      ctx.fillStyle = '#d7fa76';
+      ctx.fillStyle = this.effect ? '#f5ffd9' : '#d7fa76';
       ctx.shadowColor = 'rgba(215, 250, 118, 0.5)';
       ctx.shadowBlur = 18;
       ctx.fill();
@@ -83,7 +98,12 @@ export class HandOverlay {
     return { x: point.x * ARENA_HEIGHT / height, y: point.y * ARENA_HEIGHT / height };
   }
 
+  bounce(ball) {
+    this.effect = { x: ball.x, y: ball.y, remaining: 0.35 };
+  }
+
   clear() {
+    this.effect = null;
     this.draw(null);
   }
 }

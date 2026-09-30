@@ -121,3 +121,99 @@ test('stale hand samples are discarded', () => {
   assert.equal(loop.game.status, 'waiting');
   loop.stop();
 });
+
+test('difficulty progresses every five points and stops at level six', async () => {
+  const { difficultyForScore } = await import('../js/physics.js');
+  assert.equal(difficultyForScore(4).level, 1);
+  assert.equal(difficultyForScore(5).level, 2);
+  assert.equal(difficultyForScore(25).level, 6);
+  assert.deepEqual(difficultyForScore(1000), difficultyForScore(25));
+  assert.ok(difficultyForScore(10).gravity > difficultyForScore(5).gravity);
+  assert.ok(difficultyForScore(10).bounceSpeed > difficultyForScore(5).bounceSpeed);
+});
+
+function loopHarness() {
+  globalThis.requestAnimationFrame = () => 1;
+  globalThis.cancelAnimationFrame = () => {};
+  const states = [];
+  const overlay = {
+    canvas: { getBoundingClientRect: () => ({ width: 800, height: 600 }) },
+    clear() {}, draw() {}, controlPoint: (hand) => hand,
+  };
+  const loop = new GameLoop(overlay, (state, details) => states.push({ state, ...details }), () => {});
+  loop.start();
+  const frame = (time, hand = { x: 400, y: 470 }) => {
+    loop.hand = hand;
+    loop.handTime = time;
+    loop.tick(time);
+  };
+  return { loop, frame, states };
+}
+
+test('countdown holds the ball for three seconds before release', () => {
+  const { loop, frame, states } = loopHarness();
+  frame(0);
+  assert.equal(states.at(-1).countdown, 3);
+  for (let time = 50; time <= 2950; time += 50) frame(time);
+  assert.equal(loop.game.status, 'waiting');
+  assert.equal(loop.game.ball.y, 100);
+  frame(3000);
+  frame(3050); // Accommodate floating-point rounding at the boundary.
+  assert.equal(loop.game.status, 'playing');
+  loop.stop();
+});
+
+test('losing the hand resets countdown and restart clears round state', () => {
+  const { loop, frame } = loopHarness();
+  frame(0);
+  frame(100);
+  assert.ok(loop.countdown < 3);
+  frame(150, null);
+  assert.equal(loop.countdown, null);
+  frame(200);
+  assert.equal(loop.countdown, 3);
+  loop.pause();
+  loop.game.score = 12;
+  loop.start();
+  assert.equal(loop.paused, false);
+  assert.equal(loop.countdown, null);
+  assert.equal(loop.game.score, 0);
+  loop.stop();
+});
+
+test('pause freezes countdown and resume excludes elapsed paused time', () => {
+  const { loop, frame } = loopHarness();
+  frame(0);
+  frame(100);
+  loop.pause();
+  const remaining = loop.countdown;
+  frame(10000);
+  assert.equal(loop.countdown, remaining);
+  loop.resume();
+  frame(20000);
+  assert.equal(loop.countdown, remaining);
+  frame(20050);
+  assert.ok(loop.countdown < remaining);
+  loop.stop();
+});
+
+test('pause freezes physics and score; game-over cannot resume', () => {
+  const { loop, frame } = loopHarness();
+  loop.game.start({ x: 400, y: 470 });
+  frame(0);
+  frame(50);
+  loop.pause();
+  const frozen = { ...loop.game.ball };
+  frame(60000);
+  assert.deepEqual(loop.game.ball, frozen);
+  assert.equal(loop.game.score, 0);
+  loop.resume();
+  frame(70000);
+  assert.deepEqual(loop.game.ball, frozen);
+  loop.game.ball.y = 650;
+  frame(70050, null);
+  assert.equal(loop.running, false);
+  loop.pause();
+  loop.resume();
+  assert.equal(loop.running, false);
+});

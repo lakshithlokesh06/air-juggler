@@ -2,33 +2,52 @@
 <html lang="en">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Air Juggler gameplay smoke test</title>
-<style>
-body { font: 16px sans-serif; background: #f4f5ef; color: #202b28; margin: 24px; }
-canvas { display: block; width: min(800px, 100%); aspect-ratio: 4 / 3; background: #202b28; border-radius: 16px; margin: 20px 0; }
-button { padding: 12px; margin: 8px; }
-</style>
-<h1>Gameplay smoke test</h1>
-<p>A synthetic fingertip exercises the real renderer and game loop without camera access.</p>
-<p id="state" role="status"></p><p id="score"></p>
-<button id="restart">Start / Restart</button><button id="remove">Remove hand</button><button id="stop">Stop</button>
-<canvas width="800" height="600"></canvas>
+<title>Air Juggler — synthetic-hand test</title>
+<link rel="stylesheet" href="../css/styles.css">
+<p id="test-status">Loading the actual game UI with a synthetic hand…</p>
 <script type="module">
-import { HandOverlay } from '../js/overlay.js';
-import { GameLoop } from '../js/game-loop.js';
-const canvas = document.querySelector('canvas');
-const overlay = new HandOverlay(canvas, { videoWidth: 800, videoHeight: 600 });
+// Reuse production markup and modules; never request a camera or save test scores.
+const response = await fetch('../index.html');
+const page = new DOMParser().parseFromString(await response.text(), 'text/html');
+document.body.replaceChildren(...page.body.childNodes);
+const banner = document.createElement('div');
+banner.style.cssText = 'padding:12px;text-align:center;background:#d7fa76';
+banner.textContent = 'TEST MODE · Synthetic fingertip · No camera or saved scores. ';
+const remove = document.createElement('button');
+remove.textContent = 'Remove test hand';
+banner.append(remove);
+document.body.prepend(banner);
+const { HandOverlay } = await import('../js/overlay.js');
+const { GameLoop } = await import('../js/game-loop.js');
+const { elements, renderState, renderScores, renderRound } = await import('../js/ui.js');
+const overlay = new HandOverlay(elements.canvas, { videoWidth: 800, videoHeight: 600 });
 let present = true;
-const loop = new GameLoop(overlay,
-  (state) => { document.querySelector('#state').textContent = `State: ${state}`; },
-  (score) => { document.querySelector('#score').textContent = `Score: ${score}`; });
+let state = 'idle';
+let best = 0;
+let previousBest = 0;
+const loop = new GameLoop(overlay, (next, details) => {
+  if (state !== next) { state = next; renderState(state); }
+  renderRound(state, details, best, previousBest);
+}, (score) => { best = Math.max(best, score); renderScores(score, best); });
+function start() {
+  present = true;
+  previousBest = best;
+  state = 'waiting';
+  renderState(state);
+  loop.start();
+}
+elements.start.onclick = () => {
+  if (state === 'idle') start();
+  else { loop.stop(); state = 'idle'; renderState(state); }
+};
+elements.restart.onclick = start;
+elements.pause.onclick = () => loop.paused ? loop.resume() : loop.pause();
+remove.onclick = () => { present = false; };
 const timer = setInterval(() => {
   loop.setHand(present ? { keypoints: [{ name: 'index_finger_tip', x: 400, y: 470 }] } : null);
 }, 50);
-document.querySelector('#restart').onclick = () => { present = true; loop.start(); };
-document.querySelector('#remove').onclick = () => { present = false; };
-document.querySelector('#stop').onclick = () => { loop.stop(); document.querySelector('#state').textContent = 'State: stopped'; };
 window.addEventListener('pagehide', () => { clearInterval(timer); loop.stop(); });
-loop.start();
+renderScores(0, 0);
+renderState('idle');
 </script>
 </html>

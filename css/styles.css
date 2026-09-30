@@ -860,3 +860,41 @@ h1 svg {
 .stage[data-state="waiting"] .stage-coordinate { display: none; }
 .status-dot[data-state="playing"],
 .status-dot[data-state="waiting"] { background: #709b3a; }
+
+/* Round feedback stays inside the original play-space visual language. */
+.score-label { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+#level { font-size: 8px; letter-spacing: 1px; color: #52643e; }
+.countdown {
+  position: absolute;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  background: rgba(30, 43, 38, 0.9);
+  border: 2px solid var(--accent);
+  color: var(--accent);
+  font: 600 64px var(--display);
+  pointer-events: none;
+}
+.stage[data-state="paused"] .stage-message {
+  background: rgba(30, 43, 38, 0.95);
+  border-radius: 16px;
+  margin: 16px;
+}
+.stage[data-state="paused"] .camera-icon,
+.stage[data-state="paused"] .preview-tag,
+.stage[data-state="game-over"] .camera-icon { display: none; }
+#round-result { margin-top: 20px; }
+#result-caption { font-size: 9px; letter-spacing: 1.5px; color: var(--accent); }
+#final-score { display: block; font: 600 62px/1.1 var(--display); margin: 6px 0; }
+#round-result #result-detail { font-size: 11px; }
+.status-dot[data-state="paused"] { background: #b78b35; }
+.stage[data-state="countdown"] .stage-coordinate,
+.stage[data-state="paused"] .stage-coordinate { display: none; }
+@media (max-width: 680px) {
+  .stage[data-state="game-over"] .stage-message { padding: 18px; }
+  #round-result { margin-top: 10px; }
+  #final-score { font-size: 46px; }
+}

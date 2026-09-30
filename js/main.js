@@ -3,14 +3,18 @@ import { HandTracker } from './tracking.js';
 import { HandOverlay } from './overlay.js';
 import { readHighScore, saveHighScore } from './score.js';
 import { GameLoop } from './game-loop.js';
-import { elements, renderScores, renderState } from './ui.js';
+import { elements, renderScores, renderState, renderRound } from './ui.js';
 
 let state = 'idle';
 let requestId = 0;
 let tracker = null;
 const overlay = new HandOverlay(elements.canvas, elements.video);
 let highScore = readHighScore();
-const gameLoop = new GameLoop(overlay, setState, (score) => {
+let roundBest = highScore;
+const gameLoop = new GameLoop(overlay, (nextState, details) => {
+  setState(nextState);
+  renderRound(nextState, details, highScore, roundBest);
+}, (score) => {
   if (score > highScore) highScore = saveHighScore(score);
   renderScores(score, highScore);
 });
@@ -58,7 +62,9 @@ async function startCamera() {
     await session.load();
     if (currentRequest !== requestId) return;
     setState('waiting');
+    roundBest = highScore;
     gameLoop.start();
+    if (document.hidden) gameLoop.pause();
     session.start();
   } catch (error) {
     if (currentRequest !== requestId) return;
@@ -71,13 +77,29 @@ elements.start.addEventListener('click', () => {
   else stopCamera();
 });
 elements.restart.addEventListener('click', () => {
-  if (tracker) gameLoop.start();
+  if (tracker) {
+    roundBest = highScore;
+    gameLoop.start();
+  }
   else startCamera();
 });
 window.addEventListener('pagehide', stopCamera);
-// Stop instead of simulating a large time jump when a background tab resumes.
+elements.pause.addEventListener('click', togglePause);
+function togglePause() {
+  if (gameLoop.paused) gameLoop.resume();
+  else gameLoop.pause();
+}
+// P is a shortcut; native buttons retain their usual Space/Enter behavior.
+document.addEventListener('keydown', (event) => {
+  if (event.repeat || event.ctrlKey || event.metaKey || event.altKey || event.target.closest('input, textarea, select, [contenteditable="true"]')) return;
+  if (event.key.toLowerCase() === 'p' && !elements.pause.disabled) {
+    event.preventDefault();
+    togglePause();
+  }
+});
+// Keep the round paused on return; the player explicitly resumes.
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden) stopCamera();
+  if (document.hidden) gameLoop.pause();
 });
 renderScores(0, readHighScore());
 renderState('idle');
