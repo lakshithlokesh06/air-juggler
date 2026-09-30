@@ -2,9 +2,13 @@ import { Camera, cameraErrorMessage } from './camera.js';
 import { HandTracker } from './tracking.js';
 import { HandOverlay } from './overlay.js';
 import { readHighScore, saveHighScore } from './score.js';
+import { GameAudio } from './audio.js';
+import { GameFeedback } from './feedback.js';
 import { GameLoop } from './game-loop.js';
-import { elements, renderScores, renderState, renderRound } from './ui.js';
+import { elements, renderScores, renderState, renderRound, flashScore, announceLevel, clearFeedback, renderSound } from './ui.js';
 
+const audio = new GameAudio();
+const feedback = new GameFeedback(audio, flashScore, announceLevel);
 let state = 'idle';
 let requestId = 0;
 let tracker = null;
@@ -14,6 +18,8 @@ let roundBest = highScore;
 const gameLoop = new GameLoop(overlay, (nextState, details) => {
   setState(nextState);
   renderRound(nextState, details, highScore, roundBest);
+  feedback.update(nextState, details);
+  if (nextState === 'paused' || nextState === 'game-over') clearFeedback();
 }, (score) => {
   if (score > highScore) highScore = saveHighScore(score);
   renderScores(score, highScore);
@@ -34,6 +40,8 @@ function stopCamera() {
   tracker = null;
   camera.stop();
   gameLoop.stop();
+  feedback.reset();
+  clearFeedback();
   setState('idle');
 }
 
@@ -63,8 +71,13 @@ async function startCamera() {
     if (currentRequest !== requestId) return;
     setState('waiting');
     roundBest = highScore;
+    feedback.reset();
+    clearFeedback();
     gameLoop.start();
-    if (document.hidden) gameLoop.pause();
+    if (document.hidden) {
+    audio.silence();
+    gameLoop.pause();
+  }
     session.start();
   } catch (error) {
     if (currentRequest !== requestId) return;
@@ -73,12 +86,16 @@ async function startCamera() {
 }
 
 elements.start.addEventListener('click', () => {
+  if (!audio.muted && (state === 'idle' || state === 'error')) void audio.enable();
   if (state === 'idle' || state === 'error') startCamera();
   else stopCamera();
 });
 elements.restart.addEventListener('click', () => {
+  if (!audio.muted) void audio.enable();
   if (tracker) {
     roundBest = highScore;
+    feedback.reset();
+    clearFeedback();
     gameLoop.start();
   }
   else startCamera();
@@ -86,9 +103,25 @@ elements.restart.addEventListener('click', () => {
 window.addEventListener('pagehide', stopCamera);
 elements.pause.addEventListener('click', togglePause);
 function togglePause() {
-  if (gameLoop.paused) gameLoop.resume();
+  if (gameLoop.paused) {
+    if (!audio.muted) void audio.enable();
+    gameLoop.resume();
+  }
   else gameLoop.pause();
 }
+let soundRequest = 0;
+elements.sound.addEventListener('click', async () => {
+  const request = ++soundRequest;
+  if (!audio.muted) {
+    audio.mute();
+    renderSound(true);
+  } else {
+    const enabling = audio.enable();
+    renderSound(false);
+    const enabled = await enabling;
+    if (request === soundRequest) renderSound(audio.muted, !enabled && audio.muted);
+  }
+});
 // P is a shortcut; native buttons retain their usual Space/Enter behavior.
 document.addEventListener('keydown', (event) => {
   if (event.repeat || event.ctrlKey || event.metaKey || event.altKey || event.target.closest('input, textarea, select, [contenteditable="true"]')) return;
@@ -99,7 +132,11 @@ document.addEventListener('keydown', (event) => {
 });
 // Keep the round paused on return; the player explicitly resumes.
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden) gameLoop.pause();
+  if (document.hidden) {
+    audio.silence();
+    gameLoop.pause();
+  }
 });
 renderScores(0, readHighScore());
 renderState('idle');
+renderSound(true);

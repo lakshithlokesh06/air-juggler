@@ -18,9 +18,13 @@ remove.textContent = 'Remove test hand';
 banner.append(remove);
 document.body.prepend(banner);
 const { HandOverlay } = await import('../js/overlay.js');
+const { GameAudio } = await import('../js/audio.js');
+const { GameFeedback } = await import('../js/feedback.js');
 const { GameLoop } = await import('../js/game-loop.js');
-const { elements, renderState, renderScores, renderRound } = await import('../js/ui.js');
+const { elements, renderState, renderScores, renderRound, flashScore, announceLevel, clearFeedback, renderSound } = await import('../js/ui.js');
 const overlay = new HandOverlay(elements.canvas, { videoWidth: 800, videoHeight: 600 });
+const audio = new GameAudio();
+const feedback = new GameFeedback(audio, flashScore, announceLevel);
 let present = true;
 let state = 'idle';
 let best = 0;
@@ -28,8 +32,12 @@ let previousBest = 0;
 const loop = new GameLoop(overlay, (next, details) => {
   if (state !== next) { state = next; renderState(state); }
   renderRound(state, details, best, previousBest);
+  feedback.update(state, details);
+  if (['paused', 'game-over'].includes(state)) clearFeedback();
 }, (score) => { best = Math.max(best, score); renderScores(score, best); });
 function start() {
+  feedback.reset();
+  clearFeedback();
   present = true;
   previousBest = best;
   state = 'waiting';
@@ -38,16 +46,23 @@ function start() {
 }
 elements.start.onclick = () => {
   if (state === 'idle') start();
-  else { loop.stop(); state = 'idle'; renderState(state); }
+  else { loop.stop(); feedback.reset(); clearFeedback(); state = 'idle'; renderState(state); }
 };
 elements.restart.onclick = start;
 elements.pause.onclick = () => loop.paused ? loop.resume() : loop.pause();
+elements.sound.onclick = async () => {
+  if (audio.muted) {
+    const enabled = await audio.enable();
+    renderSound(audio.muted, !enabled);
+  } else { audio.mute(); renderSound(true); }
+};
 remove.onclick = () => { present = false; };
 const timer = setInterval(() => {
   loop.setHand(present ? { keypoints: [{ name: 'index_finger_tip', x: 400, y: 470 }] } : null);
 }, 50);
-window.addEventListener('pagehide', () => { clearInterval(timer); loop.stop(); });
+window.addEventListener('pagehide', () => { clearInterval(timer); loop.stop(); audio.mute(); });
 renderScores(0, 0);
 renderState('idle');
+renderSound(true);
 </script>
 </html>

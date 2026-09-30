@@ -6,6 +6,7 @@ export const elements = {
   start: document.querySelector('#start-button'),
   restart: document.querySelector('#restart-button'),
   pause: document.querySelector('#pause-button'),
+  sound: document.querySelector('#sound-button'),
 };
 
 const copy = {
@@ -67,4 +68,37 @@ export function renderRound(state, details, highScore, previousBest) {
     setText('#result-detail', `${details.score} ${details.score === 1 ? 'bounce' : 'bounces'} · Level ${details.level} · Best ${highScore}`);
     setText('#state-title', details.score > previousBest ? 'A new best. Nicely done.' : details.score ? 'Nice run. Go again?' : 'You’ve got this. Try again.');
   }
+}
+
+let scoreTimer;
+let levelTimer;
+
+export function flashScore() {
+  const score = document.querySelector('#score');
+  clearTimeout(scoreTimer);
+  score.classList.add('score-hit');
+  scoreTimer = setTimeout(() => score.classList.remove('score-hit'), 240);
+}
+
+export function announceLevel(level) {
+  const notice = document.querySelector('#level-notice');
+  clearTimeout(levelTimer);
+  notice.textContent = `Level ${level} — picking up the pace`;
+  notice.hidden = false;
+  levelTimer = setTimeout(() => { notice.hidden = true; }, 2200);
+}
+
+export function clearFeedback() {
+  clearTimeout(scoreTimer);
+  clearTimeout(levelTimer);
+  document.querySelector('#score').classList.remove('score-hit');
+  document.querySelector('#level-notice').hidden = true;
+}
+
+export function renderSound(muted, unavailable = false) {
+  elements.sound.textContent = muted ? 'Sound off' : 'Sound on';
+  elements.sound.setAttribute('aria-pressed', String(!muted));
+  document.querySelector('#sound-status').textContent = unavailable
+    ? 'Audio is unavailable or blocked. You can keep playing silently.'
+    : muted ? 'Optional sound effects are muted.' : 'Sound effects enabled. Select Sound on to mute.';
 }

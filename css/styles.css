@@ -898,3 +898,36 @@ h1 svg {
   #round-result { margin-top: 10px; }
   #final-score { font-size: 46px; }
 }
+
+/* Optional feedback complements, rather than replaces, visible game states. */
+.score-value { transition: color 160ms ease, transform 160ms ease; transform-origin: left center; }
+.score-value.score-hit { color: #4d7221; transform: scale(1.04); }
+.level-notice {
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  max-width: calc(100% - 40px);
+  padding: 10px 16px;
+  border: 1px solid #d7fa7680;
+  border-radius: 24px;
+  background: #202b28ed;
+  color: var(--accent);
+  font-size: 12px;
+  text-align: center;
+  pointer-events: none;
+}
+.sound-button { min-height: 40px; font-size: 12px; }
+.sound-button[aria-pressed="true"] { background: #e0ebcb; border-color: #b0c78b; }
+.sound-status { font-size: 10px; color: var(--muted); }
+.controls-help { border-top: 1px solid #cdd5c2; padding-top: 12px; margin-top: 12px; }
+.controls-help summary { cursor: pointer; font-weight: 600; font-size: 12px; padding: 5px 0; }
+.controls-help summary:focus-visible { outline: 3px solid #567729; outline-offset: 4px; border-radius: 3px; }
+.controls-help dl { font-size: 11px; line-height: 1.6; margin: 12px 0; }
+.controls-help dt { font-weight: 700; margin-top: 8px; }
+.controls-help dd { margin: 0; color: var(--muted); }
+kbd { font: inherit; padding: 1px 5px; border: 1px solid #aab799; border-radius: 4px; }
+@media (prefers-reduced-motion: reduce) {
+  .score-value.score-hit { transform: none; }
+}

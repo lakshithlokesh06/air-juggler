@@ -9,6 +9,8 @@ A webcam-controlled browser game using JavaScript and TensorFlow.js. Keep one ba
 - Gravity, upward bounces, smooth animation, and simple side/top boundaries
 - Three-second countdown and six progressive difficulty levels (every five points)
 - Pause/Resume, automatic pause when switching tabs, and P keyboard shortcut
+- Optional synthesized bounce, countdown, launch, level-up, and game-over sounds
+- Sound on/off control (muted by default), score highlights, level-up notices, and compact controls/help
 - Subtle bounce feedback and an in-stage final score, level, and personal-best summary
 - One point per valid bounce, final score, and locally saved personal best
 - Start, Restart, Stop, Pause/Resume, loading, no-hand, error, and game-over states
@@ -53,10 +55,13 @@ js/main.js                  Camera/tracker/game orchestration
 js/camera.js                Stream ownership and camera errors
 js/tracking.js              Model loading and sequential inference
 js/overlay.js               Mirrored coordinates and canvas rendering
+js/audio.js                 Lazy Web Audio synthesis and voice cleanup
+js/feedback.js              One-shot sound and visual event coordination
 js/physics.js               Pure ball motion, contacts, and round state
 js/game-loop.js             Animation timing and fingertip freshness
 js/ui.js                    DOM status and score rendering
 js/score.js                 Score formatting and defensive persistence
+tests/audio.test.mjs         Audio fallback, mute races, and event deduplication
 tests/physics.test.mjs       Physics and game-loop regression tests
 tests/tracking.test.mjs      Mapping and tracking lifecycle tests
 tests/model-smoke.html       Real model download/inference check
@@ -75,6 +80,14 @@ Difficulty increases every five points through level 6: gravity rises by 12% of 
 
 Pause freezes simulation and the countdown, keeping score and motion intact. Resume discards stale hand samples and resets the frame clock. If the hand is missing when a paused countdown resumes, the countdown resets until it is visible again.
 
+## Sound and feedback
+
+Sound is **off by default on every page load**. Select **Sound off** to enable effects; select **Sound on** to mute immediately. All cues are synthesized with short sine tones at a modest fixed gain. There are no sound files, network requests, or music. An accented cue marks the end of the countdown. At a level boundary, the level-up chime replaces the ordinary bounce sound to avoid clutter.
+
+The AudioContext is created/resumed only from user interaction. Unsupported, suspended, or blocked audio never blocks play; cues are skipped rather than replayed later. Pause, Stop, tab hiding, and restart silence pending tones. Mute stops active and scheduled voices. Every oscillator has a short envelope and is disconnected after finishing. Audio preferences are session-only.
+
+Scoring briefly highlights the score; level changes display a readable notice and a persistent level indicator. Reduced-motion mode removes score scaling and expanding bounce rings while preserving text and color feedback. Native buttons and the expandable **Controls & quick help** panel work with the keyboard; the sound toggle exposes its state and status text to assistive technology.
+
 ## Validation
 
 With a current Node.js version:
@@ -83,18 +96,20 @@ With a current Node.js version:
 node --test tests/*.test.mjs
 ```
 
-Automated tests cover gravity at different frame rates, scoring, duplicate-contact prevention, rearming, invalid hits, game-over, reset, frame caps, resizing, loop cancellation, stale tracking, mirrored crop mapping, asynchronous camera/model cleanup, difficulty boundaries, countdown timing, and pause/resume.
+Automated tests cover gravity at different frame rates, scoring, duplicate-contact prevention, rearming, invalid hits, game-over, reset, frame caps, resizing, loop cancellation, stale tracking, mirrored crop mapping, asynchronous camera/model cleanup, difficulty boundaries, countdown timing, pause/resume, lazy audio initialization, blocked-audio fallback, mute during resume, voice cleanup, and one-shot event deduplication.
 
 With the local server running:
 
 - `/tests/model-smoke.html` downloads the real model, runs blank-frame inference on WebGL, and reports PASS/FAIL without camera permission.
-- `/tests/gameplay-smoke.html` uses a synthetic fingertip with the production UI, game loop, and renderer. Select **Start** and verify 3–2–1, Pause/Resume, scoring, and level changes. **Remove test hand** should lead to game-over; **Restart** resets; **Stop** clears the canvas. Test scores are not saved.
+- `/tests/gameplay-smoke.html` uses a synthetic fingertip with the production UI, game loop, and renderer. Select **Start** and verify 3–2–1, Pause/Resume, scoring, and level changes. **Remove test hand** should lead to game-over; **Restart** resets; **Stop** clears the canvas. Test scores are not saved. Enable sound to check countdown/bounce/level/game-over cues, mute during play, and expand the controls/help panel.
 - In the main app, test camera allow/deny, Stop during loading, left/right marker alignment, losing a hand, game-over, Restart, Stop, and mobile resizing.
 
 ## Limitations and next steps
 
 Live tracking accuracy and frame rate depend on lighting, occlusion, camera latency, and GPU performance. A fast hand movement can be missed between detections; slow inference exceeding the freshness threshold can temporarily remove the control point. Extremely slow rendering intentionally slows simulation rather than allowing a large physics jump. The lite model favors speed, and WebGL is required with no CPU fallback.
 
-Only one hand and one ball are supported. Sound, power-ups, and multiplayer are not included. Future work can tune tracking stability and collision feel using physical webcam testing across devices.
+Only one hand and one ball are supported. Power-ups and multiplayer are not included. Audible quality and loudness need listening checks on target devices; browser/OS audio restrictions can still silence effects. Future work can tune tracking stability and collision feel using physical webcam testing across devices.
+
+Audio reference: [Web Audio best practices](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Best_practices).
 
 Reference: [TensorFlow hand-pose detection documentation](https://github.com/tensorflow/tfjs-models/blob/master/hand-pose-detection/src/tfjs/README.md).
