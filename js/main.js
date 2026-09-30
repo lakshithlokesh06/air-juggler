@@ -1,13 +1,19 @@
 import { Camera, cameraErrorMessage } from './camera.js';
 import { HandTracker } from './tracking.js';
 import { HandOverlay } from './overlay.js';
-import { readHighScore } from './score.js';
+import { readHighScore, saveHighScore } from './score.js';
+import { GameLoop } from './game-loop.js';
 import { elements, renderScores, renderState } from './ui.js';
 
 let state = 'idle';
 let requestId = 0;
 let tracker = null;
 const overlay = new HandOverlay(elements.canvas, elements.video);
+let highScore = readHighScore();
+const gameLoop = new GameLoop(overlay, setState, (score) => {
+  if (score > highScore) highScore = saveHighScore(score);
+  renderScores(score, highScore);
+});
 const camera = new Camera(elements.video, () => {
   fail('The camera disconnected or access was revoked. Check your camera and try again.');
 });
@@ -23,7 +29,7 @@ function stopCamera() {
   tracker?.stop();
   tracker = null;
   camera.stop();
-  overlay.clear();
+  gameLoop.stop();
   setState('idle');
 }
 
@@ -44,15 +50,15 @@ async function startCamera() {
     setState('model-loading');
     const session = new HandTracker(elements.video, (hand) => {
       if (currentRequest !== requestId) return;
-      setState(hand ? 'tracking' : 'no-hand');
-      overlay.draw(hand);
+      gameLoop.setHand(hand);
     }, () => {
       if (currentRequest === requestId) fail('Hand tracking stopped unexpectedly. Try again; if it persists, reload or try a browser with WebGL support.');
     });
     tracker = session;
     await session.load();
     if (currentRequest !== requestId) return;
-    setState('ready');
+    setState('waiting');
+    gameLoop.start();
     session.start();
   } catch (error) {
     if (currentRequest !== requestId) return;
@@ -65,9 +71,13 @@ elements.start.addEventListener('click', () => {
   else stopCamera();
 });
 elements.restart.addEventListener('click', () => {
-  renderScores(0, readHighScore());
-  startCamera();
+  if (tracker) gameLoop.start();
+  else startCamera();
 });
 window.addEventListener('pagehide', stopCamera);
+// Stop instead of simulating a large time jump when a background tab resumes.
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) stopCamera();
+});
 renderScores(0, readHighScore());
 renderState('idle');

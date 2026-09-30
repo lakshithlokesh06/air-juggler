@@ -1,3 +1,5 @@
+import { ARENA_HEIGHT, FINGER_RADIUS } from './physics.js';
+
 /** Match CSS object-fit: cover and the video's scaleX(-1) transform. */
 export function mapVideoPoint(point, videoWidth, videoHeight, width, height) {
   const scale = Math.max(width / videoWidth, height / videoHeight);
@@ -13,20 +15,37 @@ export class HandOverlay {
     this.video = video;
     this.context = canvas.getContext('2d');
     this.hand = null;
-    this.resizeObserver = new ResizeObserver(() => this.draw(this.hand));
+    this.ball = null;
+    this.resizeObserver = new ResizeObserver(() => this.draw(this.hand, this.ball));
     this.resizeObserver.observe(canvas);
   }
 
-  draw(hand) {
+  draw(hand, ball = null) {
     this.hand = hand;
+    this.ball = ball;
     const { width, height } = this.canvas.getBoundingClientRect();
     const ratio = Math.min(window.devicePixelRatio || 1, 2);
-    this.canvas.width = Math.round(width * ratio);
-    this.canvas.height = Math.round(height * ratio);
+    const pixelWidth = Math.round(width * ratio);
+    const pixelHeight = Math.round(height * ratio);
+    if (this.canvas.width !== pixelWidth) this.canvas.width = pixelWidth;
+    if (this.canvas.height !== pixelHeight) this.canvas.height = pixelHeight;
     const ctx = this.context;
     if (!ctx || !width || !height || !this.video.videoWidth) return;
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
     ctx.clearRect(0, 0, width, height);
+    if (ball) {
+      const scale = height / ARENA_HEIGHT;
+      ctx.beginPath();
+      ctx.arc(ball.x * scale, ball.y * scale, ball.radius * scale, 0, Math.PI * 2);
+      ctx.fillStyle = '#d7fa76';
+      ctx.shadowColor = 'rgba(215, 250, 118, 0.5)';
+      ctx.shadowBlur = 18;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#ffffff';
+      ctx.stroke();
+    }
     if (!hand) return;
     const map = (point) => mapVideoPoint(point, this.video.videoWidth, this.video.videoHeight, width, height);
     // Subtle dots show all 21 landmarks; a larger ring highlights the index tip.
@@ -41,7 +60,7 @@ export class HandOverlay {
     if (!tip) return;
     const { x, y } = map(tip);
     ctx.beginPath();
-    ctx.arc(x, y, 15, 0, Math.PI * 2);
+    ctx.arc(x, y, FINGER_RADIUS * height / ARENA_HEIGHT, 0, Math.PI * 2);
     ctx.fillStyle = 'rgba(30, 43, 38, 0.6)';
     ctx.fill();
     ctx.lineWidth = 3;
@@ -51,6 +70,17 @@ export class HandOverlay {
     ctx.arc(x, y, 6, 0, Math.PI * 2);
     ctx.fillStyle = '#ffffff';
     ctx.fill();
+  }
+
+  controlPoint(hand) {
+    if (!hand || !this.video.videoWidth) return null;
+    const tip = hand.keypoints.find((point) => point.name === 'index_finger_tip') ?? hand.keypoints[8];
+    const { width, height } = this.canvas.getBoundingClientRect();
+    if (!tip || !width || !height) return null;
+    const point = mapVideoPoint(tip, this.video.videoWidth, this.video.videoHeight, width, height);
+    // Cropped-out fingertips cannot hit the ball.
+    if (point.x < 0 || point.x > width || point.y < 0 || point.y > height) return null;
+    return { x: point.x * ARENA_HEIGHT / height, y: point.y * ARENA_HEIGHT / height };
   }
 
   clear() {

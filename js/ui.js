@@ -8,18 +8,19 @@ export const elements = {
 };
 
 const copy = {
-  idle: ['CAMERA OFF', 'Your stage is waiting.', 'Enable your camera, then raise one hand to see your index fingertip tracked.', 'Start camera', 'Camera permission is requested when you start.'],
+  idle: ['CAMERA OFF', 'Your stage is waiting.', 'Keep the ball up with your index fingertip. Start, then raise one hand to begin.', 'Start', 'Camera permission is requested when you start.'],
   loading: ['CONNECTING', 'Let’s get you in the frame.', 'Allow camera access in your browser’s prompt.', 'Cancel', 'Waiting for camera permission and startup.'],
-  'model-loading': ['LOADING TRACKER', 'Getting a feel for your hands.', 'Downloading the hand model. The first start may take a little longer.', 'Stop camera', 'Loading hand tracking. You can stop anytime.'],
-  ready: ['TRACKER READY', '', '', 'Stop camera', 'Tracking is ready. Raise one hand inside the frame.'],
-  'no-hand': ['NO HAND DETECTED', '', '', 'Stop camera', 'Raise one hand with your fingers visible in a well-lit space.'],
-  tracking: ['HAND TRACKED', '', '', 'Stop camera', 'The bright ring follows your index fingertip.'],
+  'model-loading': ['LOADING TRACKER', 'Getting a feel for your hands.', 'Downloading the hand model. The first start may take a little longer.', 'Stop', 'Loading hand tracking. You can stop anytime.'],
+  waiting: ['READY TO PLAY', '', '', 'Stop', 'Raise your index fingertip inside the frame to release the ball.'],
+  playing: ['IN PLAY', '', '', 'Stop', 'Meet the falling ball from below with your index fingertip.'],
+  'game-over': ['GAME OVER', 'Nice run. Go again?', 'The ball left the play area. Press Restart for a fresh round.', 'Stop', 'Your final score is on the scoreboard. Restart to play again.'],
+  'no-hand': ['NO HAND DETECTED', '', '', 'Stop', 'Hand lost — bring your fingertip back. The ball keeps moving.'],
   error: ['SETUP ERROR', 'Let’s get you back on track.', '', 'Try again', 'Check the message above, then try again.'],
 };
 
 export function renderState(state, errorMessage = '') {
   const [status, title, description, button, hint] = copy[state];
-  const active = ['ready', 'no-hand', 'tracking'].includes(state);
+  const active = ['waiting', 'playing', 'no-hand', 'game-over'].includes(state);
   const loading = state === 'loading' || state === 'model-loading';
   document.querySelector('#stage').dataset.state = state;
   document.querySelector('#stage').setAttribute('aria-busy', String(loading));
@@ -27,8 +28,8 @@ export function renderState(state, errorMessage = '') {
   document.querySelector('#status-dot').dataset.state = state;
   document.querySelector('#state-title').textContent = title;
   document.querySelector('#state-description').textContent = errorMessage || description;
-  document.querySelector('#stage-message').hidden = active;
-  document.querySelector('#live-caption').hidden = !active;
+  document.querySelector('#stage-message').hidden = active && state !== 'game-over';
+  document.querySelector('#live-caption').hidden = !active || state === 'game-over';
   document.querySelector('#tracking-message').textContent = hint;
   document.querySelector('#start-label').textContent = button;
   document.querySelector('#control-hint').textContent = hint;

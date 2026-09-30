@@ -849,3 +849,14 @@ h1 svg {
 @media (prefers-reduced-motion: reduce) {
   .stage[data-state="model-loading"] .camera-icon { animation: none; }
 }
+
+.stage[data-state="game-over"] .stage-message {
+  background: rgba(30, 43, 38, 0.95);
+  border-radius: 16px;
+  margin: 16px;
+}
+.stage[data-state="game-over"] .preview-tag { display: none; }
+.stage[data-state="playing"] .stage-coordinate,
+.stage[data-state="waiting"] .stage-coordinate { display: none; }
+.status-dot[data-state="playing"],
+.status-dot[data-state="waiting"] { background: #709b3a; }

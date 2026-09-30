@@ -13,3 +13,13 @@ export function readHighScore() {
 export function formatScore(value) {
   return String(value).padStart(2, '0');
 }
+
+export function saveHighScore(score) {
+  const best = Math.max(readHighScore(), score);
+  try {
+    localStorage.setItem(HIGH_SCORE_KEY, String(best));
+  } catch {
+    // Storage may be unavailable; the current session still keeps its best.
+  }
+  return best;
+}

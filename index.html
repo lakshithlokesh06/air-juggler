@@ -14,11 +14,11 @@
   <div class="page-shell">
     <header class="site-header">
       <a class="brand" href="./" aria-label="Air Juggler home"><span class="brand-mark" aria-hidden="true">aj<span>•</span></span> AIR JUGGLER</a>
-      <span class="build-tag"><span></span> THE PLAYGROUND / V0.2</span>
+      <span class="build-tag"><span></span> THE PLAYGROUND / V0.3</span>
     </header>
     <main>
       <section class="intro" aria-labelledby="page-title">
-        <div><p class="eyebrow">A LITTLE MOVEMENT. A LOT OF FUN.</p><h1 id="page-title">Keep it <span>up.</span><svg viewBox="0 0 70 70" aria-hidden="true"><path d="M12 56 55 13M24 13h31v31"/></svg></h1><p class="intro-copy">Your hands. Your webcam. Your next high score.<br>Get camera-ready for a new way to play.</p></div>
+        <div><p class="eyebrow">A LITTLE MOVEMENT. A LOT OF FUN.</p><h1 id="page-title">Keep it <span>up.</span><svg viewBox="0 0 70 70" aria-hidden="true"><path d="M12 56 55 13M24 13h31v31"/></svg></h1><p class="intro-copy">Your hands. Your webcam. Your next high score.<br>Keep the ball up with your index fingertip.</p></div>
         <div class="orbit" aria-hidden="true"><div class="orbit-ring"></div><span class="orbit-ball"></span><span class="orbit-caption">LESS CLICKING.<br>MORE MOVING.</span></div>
       </section>
       <section class="play-layout" aria-label="Game workspace">
@@ -26,7 +26,7 @@
           <div class="stage-toolbar"><span><span class="status-dot" id="status-dot"></span><span id="camera-status">CAMERA OFF</span></span><span class="stage-label">YOUR PLAY SPACE <span aria-hidden="true">↗</span></span></div>
           <div class="stage" id="stage" data-state="idle">
             <video id="webcam" autoplay muted playsinline aria-label="Mirrored live webcam preview" hidden></video>
-            <canvas id="game-canvas" width="1280" height="720" aria-label="Live hand landmarks and index fingertip marker" hidden></canvas>
+            <canvas id="game-canvas" width="1280" height="720" aria-label="Live ball, hand landmarks, and index fingertip marker" hidden></canvas>
             <div class="stage-grid" aria-hidden="true"></div>
             <span class="corner top-left" aria-hidden="true"></span><span class="corner top-right" aria-hidden="true"></span><span class="corner bottom-left" aria-hidden="true"></span><span class="corner bottom-right" aria-hidden="true"></span>
             <div class="stage-message" id="stage-message" role="status" aria-live="polite" aria-atomic="true">
@@ -41,8 +41,8 @@
         </div>
         <aside class="control-panel" aria-label="Score and controls">
           <div class="score-card"><div class="score-heading"><h2>THE SCOREBOARD</h2><span aria-hidden="true">↗</span></div><p class="score-label">Current score</p><p class="score-value" id="score">00</p><div class="high-score"><span><span aria-hidden="true">✦</span> Personal best</span><strong id="high-score">00</strong></div></div>
-          <div class="action-card"><button class="button button-primary" id="start-button" type="button"><span id="start-label">Start camera</span><span aria-hidden="true">↗</span></button><button class="button button-secondary" id="restart-button" type="button" disabled><span aria-hidden="true">↻</span> Restart</button><p id="control-hint">Camera permission is requested when you start.</p></div>
-          <div class="coming-card"><span class="small-label">UP NEXT</span><h3>Hands in. Game on.</h3><p>Follow your fingertip in real time. Ball physics and juggling are coming next.</p><span class="development-tag"><span></span> HAND TRACKING BUILD</span></div>
+          <div class="action-card"><button class="button button-primary" id="start-button" type="button"><span id="start-label">Start</span><span aria-hidden="true">↗</span></button><button class="button button-secondary" id="restart-button" type="button" disabled><span aria-hidden="true">↻</span> Restart</button><p id="control-hint">Camera permission is requested when you start.</p></div>
+          <div class="coming-card"><span class="small-label">HOW TO PLAY</span><h3>Hands in. Game on.</h3><p>Meet the falling ball from below with your index fingertip. Every bounce counts.</p><span class="development-tag"><span></span> ONE BALL. KEEP IT UP.</span></div>
         </aside>
       </section>
       <section class="setup-guide" aria-labelledby="guide-title"><h2 id="guide-title">GOOD TO KNOW<br><span>Before you jump in.</span></h2><div><span class="step-number">01</span><h3>Let there be light.</h3><p>A well-lit space helps your camera see you clearly.</p></div><div><span class="step-number">02</span><h3>Make some room.</h3><p>Step back and keep your hands inside the frame.</p></div><div><span class="step-number">03</span><h3>You’re in control.</h3><p>Stop the camera anytime. Nothing is uploaded.</p></div></section>
