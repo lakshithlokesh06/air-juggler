@@ -30,6 +30,11 @@ export class GameFeedback {
         this.onLevel(details.level);
       } else this.audio.play('bounce');
     }
+    if (state === 'life-lost' && this.state !== 'life-lost' && this.state !== 'paused') {
+      this.audio.silence();
+      this.audio.play('life-lost');
+      this.countdown = null;
+    }
     if (state === 'game-over' && this.state !== 'game-over') this.audio.play('game-over');
     if (state === 'paused') this.audio.silence();
     this.score = details.score;

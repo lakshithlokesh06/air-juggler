@@ -97,3 +97,17 @@ test('feedback deduplicates countdown, bounce, level-up, and game-over', () => {
   update('countdown', 0, 1, 3);
   assert.equal(cues.at(-1), 'countdown');
 });
+
+test('life-loss audio is distinct and not replayed by pause/resume', () => {
+  const cues = [];
+  const feedback = new GameFeedback({ play: (cue) => cues.push(cue), silence() {} });
+  const details = { score: 0, level: 1, countdown: null };
+  feedback.update('life-lost', details);
+  feedback.update('life-lost', details);
+  feedback.update('paused', details);
+  feedback.update('life-lost', details);
+  assert.deepEqual(cues, ['life-lost']);
+  feedback.update('waiting', details);
+  feedback.update('countdown', { ...details, countdown: 3 });
+  assert.equal(cues.at(-1), 'countdown');
+});

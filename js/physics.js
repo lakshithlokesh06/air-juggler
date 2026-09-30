@@ -1,3 +1,5 @@
+import { PowerUps } from './power-ups.js';
+
 /** All distances use an arena 600 units high; time is measured in seconds. */
 export const ARENA_HEIGHT = 600;
 export const BALL_RADIUS = 20;
@@ -22,9 +24,30 @@ export class BallGame {
     this.width = width;
     this.ball = { x: width / 2, y: 100, vx: 0, vy: 0, radius: BALL_RADIUS };
     this.score = 0;
+    this.lives = 3;
+    this.powerUps = new PowerUps();
     this.status = 'waiting';
     this.contact = false;
     this.cooldown = 0;
+  }
+
+  get fingerRadius() {
+    return FINGER_RADIUS * this.powerUps.radiusMultiplier;
+  }
+
+  loseLife() {
+    if (this.status !== 'playing') return;
+    this.lives = Math.max(0, this.lives - 1);
+    this.powerUps.clear();
+    this.status = this.lives > 0 ? 'life-lost' : 'over';
+  }
+
+  prepareLife() {
+    if (this.status !== 'life-lost') return;
+    this.ball = { x: this.width / 2, y: 100, vx: 0, vy: 0, radius: BALL_RADIUS };
+    this.contact = false;
+    this.cooldown = 0;
+    this.status = 'waiting';
   }
 
   resize(width) {
@@ -45,7 +68,10 @@ export class BallGame {
     let remaining = Math.min(Math.max(seconds, 0), 0.05);
     while (remaining > 0 && this.status === 'playing') {
       const dt = Math.min(STEP, remaining);
-      this.step(dt, finger);
+      // Boost duration uses active-play time, not slowed physics time.
+      const timeScale = this.powerUps.timeScale;
+      this.step(dt * timeScale, finger);
+      this.powerUps.tick(dt);
       remaining -= dt;
     }
   }
@@ -67,16 +93,17 @@ export class BallGame {
     }
 
     const distance = finger ? Math.hypot(ball.x - finger.x, ball.y - finger.y) : Infinity;
-    const touching = distance <= ball.radius + FINGER_RADIUS;
+    const touching = distance <= ball.radius + this.fingerRadius;
     // Separate before rearming. A cooldown also rejects jitter after contact.
-    if (distance > ball.radius + FINGER_RADIUS + 8) this.contact = false;
+    if (distance > ball.radius + this.fingerRadius + 8) this.contact = false;
     if (touching && !this.contact && this.cooldown === 0 && ball.vy > 0 && finger.y >= ball.y) {
       ball.vy = -difficultyForScore(this.score + 1).bounceSpeed;
       ball.vx = Math.max(-180, Math.min(180, (ball.x - finger.x) * 7));
       this.score += 1;
+      this.powerUps.award(this.score);
       this.contact = true;
       this.cooldown = 0.2;
     }
-    if (ball.y - ball.radius > ARENA_HEIGHT) this.status = 'over';
+    if (ball.y - ball.radius > ARENA_HEIGHT) this.loseLife();
   }
 }

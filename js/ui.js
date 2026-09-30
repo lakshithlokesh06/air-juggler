@@ -17,14 +17,15 @@ const copy = {
   countdown: ['GET READY', '', '', 'Stop', 'Keep your hand in frame. Your round starts in a moment.'],
   paused: ['PAUSED', 'Take a breather.', 'Your ball and score are safe. Resume when you’re ready.', 'Stop', 'Camera stays on while paused. Resume with the button or P.'],
   playing: ['IN PLAY', '', '', 'Stop', 'Meet the falling ball from below with your index fingertip.'],
-  'game-over': ['GAME OVER', 'Nice run. Go again?', 'The ball left the play area. Press Restart for a fresh round.', 'Stop', 'Your final score is on the scoreboard. Restart to play again.'],
+  'life-lost': ['LIFE LOST', 'Take a breath. You’re still in.', 'Your score is safe. Get your fingertip ready for the next countdown.', 'Stop', 'Resetting the ball. Your next attempt starts after 3–2–1.'],
+  'game-over': ['GAME OVER', 'Nice run. Go again?', 'All three lives used. Press Restart for a fresh round.', 'Stop', 'Your final score is on the scoreboard. Restart to play again.'],
   'no-hand': ['NO HAND DETECTED', '', '', 'Stop', 'Hand lost — bring your fingertip back. The ball keeps moving.'],
   error: ['SETUP ERROR', 'Let’s get you back on track.', '', 'Try again', 'Check the message above, then try again.'],
 };
 
 export function renderState(state, errorMessage = '') {
   const [status, title, description, button, hint] = copy[state];
-  const active = ['waiting', 'countdown', 'paused', 'playing', 'no-hand', 'game-over'].includes(state);
+  const active = ['waiting', 'countdown', 'paused', 'playing', 'no-hand', 'life-lost', 'game-over'].includes(state);
   const loading = state === 'loading' || state === 'model-loading';
   document.querySelector('#stage').dataset.state = state;
   document.querySelector('#stage').setAttribute('aria-busy', String(loading));
@@ -32,8 +33,8 @@ export function renderState(state, errorMessage = '') {
   document.querySelector('#status-dot').dataset.state = state;
   document.querySelector('#state-title').textContent = title;
   document.querySelector('#state-description').textContent = errorMessage || description;
-  document.querySelector('#stage-message').hidden = active && !['game-over', 'paused'].includes(state);
-  document.querySelector('#live-caption').hidden = !active || ['game-over', 'paused'].includes(state);
+  document.querySelector('#stage-message').hidden = active && !['game-over', 'paused', 'life-lost'].includes(state);
+  document.querySelector('#live-caption').hidden = !active || ['game-over', 'paused', 'life-lost'].includes(state);
   document.querySelector('#tracking-message').textContent = hint;
   document.querySelector('#start-label').textContent = button;
   document.querySelector('#control-hint').textContent = hint;
@@ -46,6 +47,11 @@ export function renderState(state, errorMessage = '') {
   elements.pause.setAttribute('aria-label', state === 'paused' ? 'Resume game (P)' : 'Pause game (P)');
   document.querySelector('#countdown').hidden = state !== 'countdown';
   document.querySelector('#round-result').hidden = state !== 'game-over';
+  if (!active) {
+    setText('#power-label', 'Boosts arrive every 8 points');
+    setText('#power-time', '');
+    document.querySelector('#power-status').dataset.active = 'false';
+  }
 }
 
 export function renderScores(score, highScore) {
@@ -60,6 +66,13 @@ function setText(selector, text) {
 }
 
 export function renderRound(state, details, highScore, previousBest) {
+  setText('#lives', `${details.lives} / 3 lives`);
+  const power = details.powerUp;
+  const powerName = power.type === 'slow-motion' ? 'Slow motion · 65% speed' : 'Wide touch · 2× reach';
+  setText('#power-label', power.type ? powerName : `Next boost at ${power.nextScore} points`);
+  setText('#power-time', power.type ? `${Math.ceil(power.remaining)}s${state === 'paused' ? ' · paused' : ''}` : '');
+  document.querySelector('#power-status').dataset.active = String(Boolean(power.type));
+  if (state === 'life-lost') setText('#state-title', `${details.lives} ${details.lives === 1 ? 'life' : 'lives'} left. Keep going.`);
   setText('#level', `LEVEL ${details.level} / 6`);
   if (state === 'countdown') setText('#countdown', String(details.countdown));
   if (state === 'game-over') {

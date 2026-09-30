@@ -931,3 +931,26 @@ kbd { font: inherit; padding: 1px 5px; border: 1px solid #aab799; border-radius:
 @media (prefers-reduced-motion: reduce) {
   .score-value.score-hit { transform: none; }
 }
+
+.round-status { margin-top: 12px; font-size: 11px; font-weight: 600; color: #52643e; }
+.power-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.power-status[data-active="true"] { background: #e4efcf; border-color: #a8be83; color: #31451e; }
+#power-time { white-space: nowrap; font-variant-numeric: tabular-nums; font-weight: 700; }
+.stage[data-state="life-lost"] .stage-message { background: #1e2b26f2; border-radius: 16px; margin: 16px; }
+.stage[data-state="life-lost"] .camera-icon,
+.stage[data-state="life-lost"] .preview-tag { display: none; }
+.status-dot[data-state="life-lost"] { background: #b78b35; }
+@media (max-width: 680px) {
+  .power-status { grid-column: 1 / -1; grid-row: 2; }
+}
