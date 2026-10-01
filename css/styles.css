@@ -234,10 +234,6 @@ h1 svg {
   border-radius:50%
 }
 
-.status-dot[data-state=ready] {
-  background:#709b3a
-}
-
 .status-dot[data-state=error] {
   background:#c45c46
 }
@@ -665,10 +661,6 @@ h1 svg {
   border-color:#bc866b
 }
 
-.stage[data-state=ready] .stage-coordinate {
-  display:none
-}
-
 @keyframes pulse {
   50% {
     opacity:.45
@@ -696,7 +688,7 @@ h1 svg {
     display:none
   }
   .orbit {
-    margin-right:0
+    display:none
   }
   .setup-guide {
     gap:20px
@@ -835,12 +827,8 @@ h1 svg {
 .stage[data-state="model-loading"] .camera-icon {
   animation: pulse 1.3s ease-in-out infinite;
 }
-.stage[data-state="tracking"] .stage-coordinate,
 .stage[data-state="no-hand"] .stage-coordinate {
   display: none;
-}
-.status-dot[data-state="tracking"] {
-  background: #709b3a;
 }
 .status-dot[data-state="no-hand"],
 .status-dot[data-state="model-loading"] {
@@ -975,3 +963,72 @@ kbd { font: inherit; padding: 1px 5px; border: 1px solid #aab799; border-radius:
 .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
 @media (max-width: 950px) { .mode-options { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 480px) { .mode-selection { padding: 16px; } .mode-heading { display: block; } .mode-options { grid-template-columns: 1fr; } }
+
+/* Release layout: readable support content and touch-friendly controls. */
+html { scroll-padding-top: 20px; }
+.skip-link { position: fixed; left: 16px; top: -80px; z-index: 10; padding: 12px 18px; background: var(--ink); color: white; border-radius: 8px; }
+.skip-link:focus { top: 16px; }
+.noscript-message { padding: 20px; background: var(--accent); text-align: center; }
+.site-footer a, .camera-help a { color: var(--ink); text-underline-offset: 3px; }
+.camera-help-link { display: block; margin: 14px auto 0; color: var(--accent); text-underline-offset: 4px; font-size: 13px; padding: 8px; }
+.shortcut-setting { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; color: var(--muted); font-size: 11px; cursor: pointer; }
+.shortcut-setting input { accent-color: #52643e; width: 17px; height: 17px; }
+input:focus-visible { outline: 3px solid #567729; outline-offset: 4px; }
+.button { min-height: 48px; }
+.control-panel, .stage-card, .score-card, .action-card { min-width: 0; }
+.mode-status { flex-wrap: wrap; line-height: 1.5; }
+.stage-toolbar { font-size: 10px; }
+.stage { width: calc(100% - 20px); min-width: 0; }
+.stage-message { max-width: min(460px, 100%); min-width: 0; }
+.stage:is([data-state="permission-denied"], [data-state="no-camera"]) .camera-icon { border-color: #bc866b; }
+.stage:is([data-state="error"], [data-state="permission-denied"], [data-state="no-camera"]) .preview-tag { display: none; }
+.status-dot:is([data-state="permission-denied"], [data-state="no-camera"]) { background: #c45c46; }
+.stage[data-state="no-hand"] .live-caption { border: 1px solid #c9b879; }
+.about-section { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; padding: 48px 0; border-top: 1px solid var(--line); }
+.about-section h2 { font: 500 32px/1.2 var(--display); letter-spacing: -1px; margin: 0 0 20px; }
+.about-section h3, .camera-help h2 { font: 500 20px var(--display); margin: 0 0 16px; }
+.about-section p, .about-section li, .camera-help p { color: var(--muted); font-size: 14px; line-height: 1.8; }
+.about-section ol { padding-left: 20px; margin: 0; }
+.about-section li { padding-left: 6px; margin-bottom: 12px; }
+.about-section strong { color: var(--ink); }
+.camera-help { padding: 28px; margin-bottom: 36px; border: 1px solid var(--line); border-radius: 16px; background: #fafbf7; }
+.help-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px 32px; }
+.help-grid h3 { font: 500 14px var(--display); }
+.help-grid p { font-size: 13px; }
+.camera-help > a { display: inline-block; padding: 12px 0; font-size: 12px; }
+@media (max-width: 950px) and (min-width: 681px) {
+  .play-layout { grid-template-columns: 1fr; }
+  .stage { aspect-ratio: 16 / 10; }
+  .control-panel { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .score-card { grid-column: 1; grid-row: 1; }
+  .action-card { grid-column: 2; grid-row: 1 / 3; }
+  .power-status { grid-column: 1; grid-row: 2; }
+  .coming-card { grid-column: 1 / -1; }
+}
+@media (max-width: 680px) {
+  .page-shell { padding: 0 16px; }
+  .build-tag { letter-spacing: 0.3px; }
+  .control-panel { grid-template-columns: 1fr; }
+  .score-card { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; }
+  .score-heading, .high-score { grid-column: 1 / -1; }
+  .score-label { grid-column: 1 / -1; margin: 6px 0 0; font-size: 12px; }
+  .mode-status { grid-column: 1; margin: 0; }
+  .round-status { grid-column: 1; margin: 0; align-self: start; }
+  .score-value { grid-column: 2; grid-row: 3 / 5; margin: 0; text-align: right; font-size: 52px; }
+  .power-status { grid-column: auto; grid-row: auto; }
+  .action-card { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .action-card .button { margin: 0; }
+  .action-card > p, .shortcut-setting { grid-column: 1 / -1; margin: 0; }
+  .stage { min-height: 340px; }
+  .stage-message { padding: 24px 16px; }
+  .stage-message h2 { font-size: 22px; }
+  .stage-message p { font-size: 12px; }
+  .stage-toolbar { padding: 14px; gap: 8px; }
+  .stage-label { font-size: 8px; letter-spacing: 0.5px; }
+  .stage-footer { padding: 15px; }
+  .live-caption { font-size: 11px; bottom: 12px; }
+  .about-section, .help-grid { grid-template-columns: 1fr; gap: 20px; }
+  .about-section { padding: 32px 0; }
+  .about-section h2 { font-size: 28px; }
+  .camera-help { padding: 20px; }
+}

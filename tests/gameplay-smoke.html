@@ -19,12 +19,19 @@ banner.append(remove);
 const drop = document.createElement('button');
 drop.textContent = 'Drop test ball';
 banner.append(drop);
+const states = document.createElement('select');
+states.setAttribute('aria-label', 'Preview setup state');
+for (const value of ['idle', 'loading', 'model-loading', 'permission-denied', 'no-camera', 'error']) {
+  const option = document.createElement('option');
+  option.value = value; option.textContent = value; states.append(option);
+}
+banner.append(states);
 document.body.prepend(banner);
 const { HandOverlay } = await import('../js/overlay.js');
 const { GameAudio } = await import('../js/audio.js');
 const { GameFeedback } = await import('../js/feedback.js');
 const { GameLoop } = await import('../js/game-loop.js');
-const { elements, renderState, renderScores, renderRound, flashScore, announceLevel, clearFeedback, renderSound, renderModeSelection } = await import('../js/ui.js');
+const { elements, renderState, renderScores, renderRound, flashScore, announceLevel, clearFeedback, renderSound, renderModeSelection, renderShortcut, SETUP_STATES } = await import('../js/ui.js');
 const overlay = new HandOverlay(elements.canvas, { videoWidth: 800, videoHeight: 600 });
 const audio = new GameAudio();
 const feedback = new GameFeedback(audio, flashScore, announceLevel);
@@ -51,8 +58,8 @@ function start() {
   loop.start(selectedMode);
 }
 elements.start.onclick = () => {
-  if (state === 'idle') start();
-  else { loop.stop(); feedback.reset(); clearFeedback(); state = 'idle'; renderState(state); renderModeSelection(selectedMode, (id) => bests[id]); }
+  if (SETUP_STATES.includes(state)) start();
+  else { loop.stop(); feedback.reset(); clearFeedback(); state = 'idle'; renderState(state); renderModeSelection(selectedMode, (id) => bests[id]); renderScores(0, best); }
 };
 elements.restart.onclick = start;
 elements.pause.onclick = () => loop.paused ? loop.resume() : loop.pause();
@@ -62,6 +69,19 @@ elements.sound.onclick = async () => {
     renderSound(audio.muted, !enabled);
   } else { audio.mute(); renderSound(true); }
 };
+states.onchange = () => {
+  loop.stop(); feedback.reset(); clearFeedback();
+  state = states.value;
+  renderState(state, state === 'error' ? 'Could not start hand tracking. Check your connection and WebGL support, then try again.' : '');
+};
+elements.shortcut.onchange = renderShortcut;
+document.addEventListener('keydown', (event) => {
+  if (!event.repeat && !event.ctrlKey && !event.metaKey && !event.altKey &&
+      !event.target.closest('input, textarea, select, [contenteditable="true"]') &&
+      event.key.toLowerCase() === 'p' && elements.shortcut.checked && !elements.pause.disabled) {
+    event.preventDefault(); loop.paused ? loop.resume() : loop.pause();
+  }
+});
 remove.onclick = () => {
   present = !present;
   remove.textContent = present ? 'Remove test hand' : 'Restore test hand';
@@ -72,7 +92,7 @@ const timer = setInterval(() => {
 }, 50);
 window.addEventListener('pagehide', () => { clearInterval(timer); loop.stop(); audio.mute(); });
 document.querySelector('#mode-options').onchange = (event) => {
-  if (state !== 'idle') return;
+  if (!SETUP_STATES.includes(state)) return;
   selectedMode = event.target.value;
   best = bests[selectedMode];
   renderModeSelection(selectedMode, (id) => bests[id]);

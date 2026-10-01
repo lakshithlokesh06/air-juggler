@@ -27,7 +27,7 @@ export class Camera {
     }
     this.stream = stream;
     this.stream.getVideoTracks().forEach((track) => {
-      track.addEventListener('ended', () => this.onEnded(), { once: true });
+      track.addEventListener('ended', () => { if (requestId === this.requestId) this.onEnded(); }, { once: true });
     });
     this.video.srcObject = this.stream;
     try {
@@ -56,4 +56,9 @@ export function cameraErrorMessage(error) {
     SecurityError: 'Camera access is blocked by your browser’s security settings.',
   };
   return messages[error.name] || error.message || 'Something went wrong while starting your camera. Please try again.';
+}
+
+export function cameraErrorState(error) {
+  if (['NotAllowedError', 'SecurityError'].includes(error.name)) return 'permission-denied';
+  return error.name === 'NotFoundError' ? 'no-camera' : 'error';
 }
