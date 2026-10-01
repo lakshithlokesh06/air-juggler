@@ -24,22 +24,30 @@ export class GameLoop {
   }
 
   notify(state) {
-    this.onState(state, {
+    const details = {
       score: this.game.score,
       lives: this.game.lives,
       mode: this.game.mode.id,
-      maxLives: this.game.mode.lives,
       remainingTime: this.remainingTime,
       misses: this.game.misses,
       endReason: this.game.endReason,
       powerUp: this.game.powerUps.snapshot(),
       level: difficultyForScore(this.game.score).level,
       countdown: this.countdown === null ? null : Math.ceil(this.countdown),
-    });
+    };
+    // Only notify when a visible value changes, not on every animation frame.
+    const signature = JSON.stringify([state, details.score, details.lives, details.mode,
+      details.misses, details.endReason, details.countdown, Math.ceil(details.remainingTime),
+      details.powerUp.type, Math.ceil(details.powerUp.remaining), details.powerUp.nextScore]);
+    if (signature !== this.lastNotification) {
+      this.lastNotification = signature;
+      this.onState(state, details);
+    }
   }
 
   start(modeId = this.game.mode.id) {
     this.stop();
+    this.lastNotification = null;
     this.game.reset(this.arenaWidth(), modeId);
     this.remainingTime = this.game.mode.seconds;
     this.clockStarted = false;
@@ -73,7 +81,7 @@ export class GameLoop {
   }
 
   arenaWidth() {
-    const { width, height } = this.overlay.canvas.getBoundingClientRect();
+    const { width, height } = this.overlay.getSize?.() ?? this.overlay.canvas.getBoundingClientRect();
     return height > 0 ? width / height * ARENA_HEIGHT : 800;
   }
 

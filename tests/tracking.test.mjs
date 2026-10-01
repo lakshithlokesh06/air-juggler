@@ -116,3 +116,52 @@ test('camera permission resolving after stop releases the late stream', async ()
     else delete globalThis.navigator;
   }
 });
+
+test('inference is rate limited, skips duplicates, and suspends without results', async () => {
+  globalThis.requestAnimationFrame = () => 1;
+  globalThis.cancelAnimationFrame = () => {};
+  let calls = 0;
+  const video = { readyState: 2, videoWidth: 640, currentTime: 1 };
+  const tracker = new HandTracker(video, () => {}, assert.fail, async () => ({
+    estimateHands: async () => { calls++; return []; }, dispose() {},
+  }));
+  await tracker.load();
+  await tracker.tick(0);
+  video.currentTime++;
+  await tracker.tick(16);
+  assert.equal(calls, 1);
+  await tracker.tick(34);
+  assert.equal(calls, 2);
+  await tracker.tick(100);
+  assert.equal(calls, 2, 'same video frame is not inferred again');
+  tracker.suspended = true;
+  video.currentTime++;
+  await tracker.tick(200);
+  assert.equal(calls, 2);
+  tracker.suspended = false;
+  await tracker.tick(234);
+  assert.equal(calls, 3);
+  tracker.stop();
+});
+
+test('suspending during inference suppresses its late result', async () => {
+  const pending = deferred();
+  let results = 0;
+  const tracker = new HandTracker({ readyState: 2, videoWidth: 640, currentTime: 1 },
+    () => results++, assert.fail, async () => ({ estimateHands: () => pending.promise, dispose() {} }));
+  await tracker.load();
+  const frame = tracker.tick(0);
+  tracker.suspended = true;
+  pending.resolve([]);
+  await frame;
+  assert.equal(results, 0);
+  tracker.stop();
+});
+
+test('camera failures select actionable setup states', async () => {
+  const { cameraErrorState } = await import('../js/camera.js');
+  assert.equal(cameraErrorState({ name: 'NotAllowedError' }), 'permission-denied');
+  assert.equal(cameraErrorState({ name: 'SecurityError' }), 'permission-denied');
+  assert.equal(cameraErrorState({ name: 'NotFoundError' }), 'no-camera');
+  assert.equal(cameraErrorState({ name: 'NotReadableError' }), 'error');
+});

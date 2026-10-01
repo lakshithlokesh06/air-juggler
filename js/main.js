@@ -1,11 +1,11 @@
-import { Camera, cameraErrorMessage } from './camera.js';
+import { Camera, cameraErrorMessage, cameraErrorState } from './camera.js';
 import { HandTracker } from './tracking.js';
 import { HandOverlay } from './overlay.js';
 import { readHighScore, saveHighScore } from './score.js';
 import { GameAudio } from './audio.js';
 import { GameFeedback } from './feedback.js';
 import { GameLoop } from './game-loop.js';
-import { elements, renderScores, renderState, renderRound, flashScore, announceLevel, clearFeedback, renderSound, renderModeSelection } from './ui.js';
+import { elements, renderScores, renderState, renderRound, flashScore, announceLevel, clearFeedback, renderSound, renderModeSelection, renderShortcut, SETUP_STATES } from './ui.js';
 
 const audio = new GameAudio();
 const feedback = new GameFeedback(audio, flashScore, announceLevel);
@@ -32,6 +32,7 @@ const camera = new Camera(elements.video, () => {
 function setState(nextState, message) {
   if (state === nextState && !message) return;
   state = nextState;
+  if (tracker) tracker.suspended = nextState === 'paused' || nextState === 'game-over';
   renderState(state, message);
 }
 
@@ -45,11 +46,12 @@ function stopCamera() {
   clearFeedback();
   setState('idle');
   renderModeSelection(selectedMode, readHighScore);
+  renderScores(0, highScore);
 }
 
-function fail(message) {
+function fail(message, errorState = 'error') {
   stopCamera();
-  setState('error', message);
+  setState(errorState, message);
 }
 
 async function startCamera() {
@@ -83,13 +85,13 @@ async function startCamera() {
     session.start();
   } catch (error) {
     if (currentRequest !== requestId) return;
-    fail(phase === 'camera' ? cameraErrorMessage(error) : `Could not start hand tracking. ${error.message || 'Check your connection and WebGL support, then try again.'}`);
+    fail(phase === 'camera' ? cameraErrorMessage(error) : `Could not start hand tracking. ${error.message || 'Check your connection and WebGL support, then try again.'}`, phase === 'camera' ? cameraErrorState(error) : 'error');
   }
 }
 
 elements.start.addEventListener('click', () => {
-  if (!audio.muted && (state === 'idle' || state === 'error')) void audio.enable();
-  if (state === 'idle' || state === 'error') startCamera();
+  if (!audio.muted && SETUP_STATES.includes(state)) void audio.enable();
+  if (SETUP_STATES.includes(state)) startCamera();
   else stopCamera();
 });
 elements.restart.addEventListener('click', () => {
@@ -124,10 +126,11 @@ elements.sound.addEventListener('click', async () => {
     if (request === soundRequest) renderSound(audio.muted, !enabled && audio.muted);
   }
 });
+elements.shortcut.addEventListener('change', renderShortcut);
 // P is a shortcut; native buttons retain their usual Space/Enter behavior.
 document.addEventListener('keydown', (event) => {
   if (event.repeat || event.ctrlKey || event.metaKey || event.altKey || event.target.closest('input, textarea, select, [contenteditable="true"]')) return;
-  if (event.key.toLowerCase() === 'p' && !elements.pause.disabled) {
+  if (event.key.toLowerCase() === 'p' && elements.shortcut.checked && !elements.pause.disabled) {
     event.preventDefault();
     togglePause();
   }
@@ -140,7 +143,7 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 document.querySelector('#mode-options').addEventListener('change', (event) => {
-  if (!['idle', 'error'].includes(state) || event.target.name !== 'game-mode') return;
+  if (!SETUP_STATES.includes(state) || event.target.name !== 'game-mode') return;
   selectedMode = event.target.value;
   highScore = readHighScore(selectedMode);
   roundBest = highScore;

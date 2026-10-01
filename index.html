@@ -4,17 +4,22 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f4f5ef">
-  <meta name="description" content="Air Juggler — a webcam-controlled browser game. Get your camera ready for hands-free play.">
+  <meta name="description" content="Air Juggler — a webcam-controlled browser game. Keep a ball in the air with your fingertip. Four modes, local best scores, and on-device hand tracking.">
   <title>Air Juggler — Keep it up.</title>
+  <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;family=Space+Grotesk:wght@400;500;600;700&amp;display=swap">
   <link rel="stylesheet" href="./css/styles.css">
   <script type="module" src="./js/main.js"></script>
 </head>
 <body>
+  <a class="skip-link" href="#game-workspace">Skip to game</a>
+  <noscript><p class="noscript-message">Air Juggler needs JavaScript for camera tracking and gameplay. Enable it, then reload.</p></noscript>
   <div class="page-shell">
     <header class="site-header">
       <a class="brand" href="./" aria-label="Air Juggler home"><span class="brand-mark" aria-hidden="true">aj<span>•</span></span> AIR JUGGLER</a>
-      <span class="build-tag"><span></span> THE PLAYGROUND / V0.7</span>
+      <span class="build-tag"><span></span> THE PLAYGROUND / V1.0</span>
     </header>
     <main>
       <section class="intro" aria-labelledby="page-title">
@@ -26,9 +31,9 @@
         <fieldset><legend class="visually-hidden">Game mode</legend><div id="mode-options" class="mode-options"></div></fieldset>
         <p id="mode-description" role="status">Choose a mode, then select Start.</p>
       </section>
-      <section class="play-layout" aria-label="Game workspace">
+      <section id="game-workspace" tabindex="-1" class="play-layout" aria-label="Game workspace">
         <div class="stage-card">
-          <div class="stage-toolbar"><span><span class="status-dot" id="status-dot"></span><span id="camera-status">CAMERA OFF</span></span><span class="stage-label">YOUR PLAY SPACE <span aria-hidden="true">↗</span></span></div>
+          <div class="stage-toolbar"><span><span class="status-dot" id="status-dot"></span><span id="camera-status" role="status">CAMERA OFF</span></span><span class="stage-label">YOUR PLAY SPACE <span aria-hidden="true">↗</span></span></div>
           <div class="stage" id="stage" data-state="idle">
             <video id="webcam" autoplay muted playsinline aria-label="Mirrored live webcam preview" hidden></video>
             <canvas id="game-canvas" width="1280" height="720" aria-label="Live ball, hand landmarks, and index fingertip marker" hidden></canvas>
@@ -38,6 +43,7 @@
               <div class="camera-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><rect x="4" y="9" width="17" height="15" rx="4"/><path d="m21 14 7-4v13l-7-4"/></svg></div>
               <h2 id="state-title">Your stage is waiting.</h2><p id="state-description">Enable your camera to step into the frame.<br>A little room to move is all you need.</p>
               <div id="round-result" hidden><span id="result-caption">FINAL SCORE</span><strong id="final-score">00</strong><p id="result-detail"></p></div>
+              <a id="camera-help-link" class="camera-help-link" href="#camera-help" hidden>Camera setup help</a>
               <span class="preview-tag">CAMERA PREVIEW</span>
             </div>
             <div id="level-notice" class="level-notice" role="status" aria-live="polite" hidden></div>
@@ -50,13 +56,33 @@
         <aside class="control-panel" aria-label="Score and controls">
           <div class="score-card"><div class="score-heading"><h2>THE SCOREBOARD</h2><span aria-hidden="true">↗</span></div><p class="score-label">Current score <span id="level">LEVEL 1 / 6</span></p><div class="mode-status"><span id="current-mode">Normal</span><span id="challenge-timer" role="timer" aria-label="Challenge time remaining" hidden>01:00</span></div><div class="round-status"><span id="lives" role="status" aria-live="polite">3 / 3 lives</span></div><p class="score-value" id="score">00</p><div class="high-score"><span><span aria-hidden="true">✦</span> Personal best</span><strong id="high-score">00</strong></div></div>
           <div id="power-status" class="power-status" data-active="false"><span id="power-label" role="status" aria-live="polite">Boosts arrive every 8 points</span><span id="power-time" aria-hidden="true"></span></div>
-          <div class="action-card"><button class="button button-primary" id="start-button" type="button"><span id="start-label">Start</span><span aria-hidden="true">↗</span></button><button class="button button-secondary" id="restart-button" type="button" disabled><span aria-hidden="true">↻</span> Restart</button><button class="button button-secondary" id="pause-button" type="button" aria-keyshortcuts="P" aria-label="Pause game (P)" disabled>Pause</button><button class="button button-secondary sound-button" id="sound-button" type="button" aria-pressed="false" aria-describedby="sound-status">Sound off</button><p id="sound-status" class="sound-status" role="status">Optional sound effects are muted.</p><p id="control-hint">Camera permission is requested when you start.</p></div>
-          <div class="coming-card"><span class="small-label">HOW TO PLAY</span><h3>Hands in. Game on.</h3><p>Meet the falling ball from below with your index fingertip. Every mode has its own personal best. Every bounce counts. The pace increases every 5 points.</p><details class="controls-help"><summary>Controls &amp; quick help</summary><dl><dt>Play</dt><dd>Raise one fingertip. Hold it in frame for 3–2–1.</dd><dt>Bounce</dt><dd>Meet the falling ball from below.</dd><dt>Pause / Resume</dt><dd>Use the button or press <kbd>P</kbd>.</dd><dt>Restart</dt><dd>Start a fresh round; keep your personal best.</dd><dt>Lives &amp; boosts</dt><dd>Life counts and boosts depend on your mode. A miss resets the ball and clears boosts; your score stays. The 60-second challenge allows unlimited attempts, but its clock runs through recovery. Pause freezes the clock. Stop returns to mode selection.</dd><dt>Stop</dt><dd>End the session and release the camera.</dd><dt>Sound</dt><dd>Optional. Select Sound off to enable, Sound on to mute.</dd></dl><p>Good light helps tracking. Losing your hand during play does not pause the ball.</p></details></div>
+          <div class="action-card"><button class="button button-primary" id="start-button" type="button"><span id="start-label">Start</span><span aria-hidden="true">↗</span></button><button class="button button-secondary" id="restart-button" type="button" disabled><span aria-hidden="true">↻</span> Restart</button><button class="button button-secondary" id="pause-button" type="button" aria-keyshortcuts="P" aria-label="Pause game (P)" disabled>Pause</button><button class="button button-secondary sound-button" id="sound-button" type="button" aria-pressed="false" aria-describedby="sound-status">Sound off</button><p id="sound-status" class="sound-status" role="status">Optional sound effects are muted.</p><label class="shortcut-setting"><input id="keyboard-shortcut" type="checkbox" checked> Enable <kbd>P</kbd> pause shortcut</label><p id="control-hint">Camera permission is requested when you start.</p></div>
+          <div class="coming-card"><span class="small-label">HOW TO PLAY</span><h3>Hands in. Game on.</h3><p>Meet the falling ball from below with your index fingertip. Every mode has its own personal best. Every bounce counts. The pace increases every 5 points.</p><details class="controls-help"><summary>Controls &amp; quick help</summary><dl><dt>Play</dt><dd>Raise one fingertip. Hold it in frame for 3–2–1.</dd><dt>Bounce</dt><dd>Meet the falling ball from below.</dd><dt>Pause / Resume</dt><dd>Use the button, or press <kbd>P</kbd> when the shortcut is enabled.</dd><dt>Restart</dt><dd>Start a fresh round; keep your personal best.</dd><dt>Lives &amp; boosts</dt><dd>Life counts and boosts depend on your mode. A miss resets the ball and clears boosts; your score stays. The 60-second challenge allows unlimited attempts, but its clock runs through recovery. Pause freezes the clock. Stop returns to mode selection.</dd><dt>Stop</dt><dd>End the session and release the camera.</dd><dt>Sound</dt><dd>Optional. Select Sound off to enable, Sound on to mute.</dd></dl><p>Good light helps tracking. Losing your hand during play does not pause the ball.</p></details></div>
         </aside>
       </section>
       <section class="setup-guide" aria-labelledby="guide-title"><h2 id="guide-title">GOOD TO KNOW<br><span>Before you jump in.</span></h2><div><span class="step-number">01</span><h3>Let there be light.</h3><p>A well-lit space helps your camera see you clearly.</p></div><div><span class="step-number">02</span><h3>Make some room.</h3><p>Step back and keep your hands inside the frame.</p></div><div><span class="step-number">03</span><h3>You’re in control.</h3><p>Stop the camera anytime. Nothing is uploaded.</p></div></section>
+      <section id="about" class="about-section" aria-labelledby="about-title">
+        <div><p class="eyebrow">BUILT FOR A LITTLE PLAY</p><h2 id="about-title">Your hands are the controller.</h2>
+          <p>Air Juggler turns a webcam and a single fingertip into a juggling challenge. Browser-based hand tracking meets a lightweight physics engine — no controller or account required.</p>
+          <p>Video frames are processed on your device, never recorded or uploaded. The page downloads fonts, tracking libraries, and model files; personal bests stay in this browser.</p></div>
+        <div><h3>How to play</h3><ol>
+          <li><strong>Choose your pace.</strong> Start with Easy, try Normal or Hard, or race the clock in the 60-second challenge.</li>
+          <li><strong>Find your frame.</strong> Select Start, allow the camera, and show one hand in good light. Hold it in view through 3–2–1.</li>
+          <li><strong>Keep it up.</strong> Meet the falling ball from below with your fingertip ring. Each bounce scores a point; occasional boosts lend a hand.</li>
+          <li><strong>Take a break.</strong> Pause with the button or optional P shortcut. Restart resets the round; Stop releases the camera and returns to mode selection.</li>
+        </ol></div>
+      </section>
+      <section id="camera-help" class="camera-help" aria-labelledby="camera-help-title">
+        <h2 id="camera-help-title">Camera &amp; setup help</h2>
+        <div class="help-grid">
+          <div><h3>Permission or no camera?</h3><p>Allow camera access using the icon beside your browser’s address bar. Connect or enable a webcam, close other apps using it, then retry. Your microphone is never requested.</p></div>
+          <div><h3>Tracking taking a moment?</h3><p>The first start downloads a hand model. Check your connection and allow model downloads through your content blocker. Cancel or Stop is always available while loading.</p></div>
+          <div><h3>Hand not detected?</h3><p>Pause, improve the lighting, and show one unobstructed hand inside the frame. Keep fingertips away from cropped edges. Losing your hand during play does not pause the ball.</p></div>
+          <div><h3>Browser &amp; accessibility</h3><p>Use a modern browser with WebGL and camera support over HTTPS or localhost. Controls work with Tab and Enter; sound and the P shortcut are optional. Reduced-motion preferences remove decorative effects. Playing still requires a visible hand.</p></div>
+        </div><a href="#game-workspace">Back to game ↑</a>
+      </section>
     </main>
-    <footer class="site-footer"><span>AIR JUGGLER <span class="footer-divider">/</span> MADE TO MOVE.</span><span>Powered by JavaScript &amp; TensorFlow.js.</span></footer>
+    <footer class="site-footer"><span>AIR JUGGLER <span class="footer-divider">/</span> MADE TO MOVE.</span><span><a href="#about">About / How to play</a> · JavaScript &amp; TensorFlow.js.</span></footer>
   </div>
 </body>
 </html>

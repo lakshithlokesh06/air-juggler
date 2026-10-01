@@ -53,6 +53,8 @@ export class HandTracker {
     this.inference = null;
     this.frameId = null;
     this.lastVideoTime = -1;
+    this.lastInferenceTime = -Infinity;
+    this.suspended = false;
   }
 
   async load() {
@@ -83,18 +85,20 @@ export class HandTracker {
   }
 
   start() {
-    if (!this.stopped && this.detector) this.frameId = requestAnimationFrame(() => this.tick());
+    if (!this.stopped && this.detector) this.frameId = requestAnimationFrame((time) => this.tick(time));
   }
 
-  async tick() {
+  async tick(time = performance.now()) {
     if (this.stopped) return;
     try {
-      if (this.video.readyState >= 2 && this.video.videoWidth > 0 && this.video.currentTime !== this.lastVideoTime) {
+      const hidden = typeof document !== 'undefined' && document.hidden;
+      if (!this.suspended && !hidden && time - this.lastInferenceTime >= 1000 / 30 && this.video.readyState >= 2 && this.video.videoWidth > 0 && this.video.currentTime !== this.lastVideoTime) {
         this.lastVideoTime = this.video.currentTime;
+        this.lastInferenceTime = time;
         // Keep raw coordinates; the overlay mirrors them exactly once.
         this.inference = this.detector.estimateHands(this.video, { flipHorizontal: false, staticImageMode: false });
         const hands = await this.inference;
-        if (!this.stopped) this.onResult(hands[0] ?? null);
+        if (!this.stopped && !this.suspended) this.onResult(hands[0] ?? null);
       }
     } catch (error) {
       if (!this.stopped) {
@@ -106,7 +110,7 @@ export class HandTracker {
       this.inference = null;
       if (this.stopped) this.disposeDetector();
     }
-    if (!this.stopped) this.frameId = requestAnimationFrame(() => this.tick());
+    if (!this.stopped) this.frameId = requestAnimationFrame((time) => this.tick(time));
   }
 
   stop() {

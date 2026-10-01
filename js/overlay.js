@@ -19,15 +19,23 @@ export class HandOverlay {
     this.options = {};
     this.effect = null;
     this.reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-    this.resizeObserver = new ResizeObserver(() => this.draw(this.hand, this.ball, 0, this.options));
+    this.size = { width: 0, height: 0 };
+    this.resizeObserver = new ResizeObserver(([entry]) => {
+      this.size = { width: entry.contentRect.width, height: entry.contentRect.height };
+      this.draw(this.hand, this.ball, 0, this.options);
+    });
     this.resizeObserver.observe(canvas);
+  }
+
+  getSize() {
+    return this.size;
   }
 
   draw(hand, ball = null, dt = 0, options = {}) {
     this.options = options;
     this.hand = hand;
     this.ball = ball;
-    const { width, height } = this.canvas.getBoundingClientRect();
+    const { width, height } = this.getSize();
     const ratio = Math.min(window.devicePixelRatio || 1, 2);
     const pixelWidth = Math.round(width * ratio);
     const pixelHeight = Math.round(height * ratio);
@@ -92,7 +100,7 @@ export class HandOverlay {
   controlPoint(hand) {
     if (!hand || !this.video.videoWidth) return null;
     const tip = hand.keypoints.find((point) => point.name === 'index_finger_tip') ?? hand.keypoints[8];
-    const { width, height } = this.canvas.getBoundingClientRect();
+    const { width, height } = this.getSize();
     if (!tip || !width || !height) return null;
     const point = mapVideoPoint(tip, this.video.videoWidth, this.video.videoHeight, width, height);
     // Cropped-out fingertips cannot hit the ball.

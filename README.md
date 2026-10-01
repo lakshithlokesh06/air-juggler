@@ -40,6 +40,28 @@ The round waits for a visible fingertip before starting its 3-second countdown. 
 
 Camera access requires **localhost or HTTPS**, a webcam, and browser permission. JavaScript modules require a local HTTP server; do not open `index.html` directly. A plain HTTP LAN address is not sufficient for camera access on another device.
 
+## Controls and accessibility
+
+| Control | Action |
+| --- | --- |
+| Start / retry | Request camera access and prepare tracking |
+| Stop / Cancel | Release the camera and return to mode selection |
+| Restart | Reset this mode’s round, retaining its personal best |
+| Pause / Resume | Freeze or continue the round, clock, boosts, and countdown |
+| P | Pause/resume when **Enable P pause shortcut** is checked |
+| Sound off / on | Enable optional effects or mute immediately |
+| Tab / Shift+Tab | Navigate controls; the first link skips to the game |
+| Enter / Space | Activate a focused button |
+| Arrow keys | Change the focused mode radio selection |
+
+The interface includes visible focus, 48px game buttons, named controls, status announcements, About/How to Play, and camera troubleshooting. The single-letter shortcut can be disabled; its accessible label and shortcut metadata update accordingly. Reduced-motion preferences remove decorative animation and bounce rings, but retain essential ball movement. Playing requires a visible hand; keyboard controls do not substitute for the fingertip.
+
+## Browser requirements
+
+Use a modern browser with JavaScript modules, camera access, WebGL, Canvas 2D, and ResizeObserver. HTTPS or localhost is required; a plain HTTP LAN address does not enable a phone camera. Internet access is needed for model/library downloads and optional fonts. No backend, account, API key, or build step is required. Web Audio is optional; unavailable storage falls back to session bests.
+
+Viewport checks use the Codex in-app Chromium browser, not physical-mobile emulation or cross-browser certification. Test real cameras, orientation changes, audio, and performance in your target Chrome, Edge, Firefox, and Safari devices before publishing. Embedded browsers and device policies can restrict camera access.
+
 ## Tech stack
 
 - Semantic HTML5, responsive CSS, native JavaScript modules
@@ -50,11 +72,20 @@ Camera access requires **localhost or HTTPS**, a webcam, and browser permission.
 
 Pinned libraries download from jsDelivr after camera startup, followed by model assets from the default TensorFlow model host. Internet access and WebGL are required. Video frames and landmarks are processed locally, never recorded or uploaded. High scores use separate `air-juggler.high-score.<mode>` localStorage keys. The legacy `air-juggler.high-score` is read only as a Normal-mode fallback. Blocked storage uses separate in-memory session bests and does not prevent play.
 
+## Architecture and performance
+
+`main.js` owns camera/tracker/session lifecycle and connects simulation, UI, persistence, and feedback. `tracking.js` produces asynchronous samples; `game-loop.js` renders independently and rejects stale samples. Deterministic rules live in `physics.js`, `modes.js`, and `power-ups.js`. `overlay.js` maps/draws coordinates, while `ui.js` updates the accessible interface.
+
+Inference is sequential, capped at 30 Hz, and skips duplicate video frames. Paused, hidden, and game-over sessions skip inference; Stop disposes the detector. ResizeObserver caches canvas dimensions, avoiding repeated layout measurements in the animation loop. UI notifications are emitted only when displayed values change, and fixed DOM references are cached. No gameplay constants or reward rules were changed for release polish.
+
 ## Structure
 
 ```text
 index.html                  Semantic UI and controls
 css/styles.css              Visual styling and responsive layouts
+assets/favicon.svg          Local brand icon
+docs/screenshots/           Real desktop/mobile UI captures
+docs/release-validation.md  Executed checks and remaining manual validation
 js/main.js                  Camera/tracker/game orchestration
 js/camera.js                Stream ownership and camera errors
 js/tracking.js              Model loading and sequential inference
@@ -67,6 +98,7 @@ js/physics.js               Pure ball motion, contacts, and round state
 js/game-loop.js             Animation timing and fingertip freshness
 js/ui.js                    DOM status and score rendering
 js/score.js                 Score formatting and defensive persistence
+tests/release.test.mjs       Cross-mode replay and release markup checks
 tests/audio.test.mjs         Audio fallback, mute races, and event deduplication
 tests/power-ups.test.mjs     Rewards, expiry, non-stacking, and collision modifiers
 tests/modes.test.mjs         Mode balance, timer lifecycle, and isolated score storage
@@ -130,13 +162,28 @@ With a current Node.js version:
 node --test tests/*.test.mjs
 ```
 
-Automated tests cover gravity at different frame rates, scoring, duplicate-contact prevention, rearming, invalid hits, game-over, reset, frame caps, resizing, loop cancellation, stale tracking, mirrored crop mapping, asynchronous camera/model cleanup, difficulty boundaries, countdown timing, pause/resume, lazy audio initialization, blocked-audio fallback, mute during resume, voice cleanup, one-shot event deduplication, three-life depletion, recovery, reward thresholds, boost expiration/non-stacking, widened collisions, mode-specific settings, independent best scores, legacy-score fallback, and challenge timing/expiry.
+The release suite has **52 passing tests**. Tests cover inference throttling/suspension, deduplicated status updates, release markup, replay across all modes, gravity at different frame rates, scoring, duplicate-contact prevention, rearming, invalid hits, game-over, reset, frame caps, resizing, loop cancellation, stale tracking, mirrored crop mapping, asynchronous camera/model cleanup, difficulty boundaries, countdown timing, pause/resume, lazy audio initialization, blocked-audio fallback, mute during resume, voice cleanup, one-shot event deduplication, three-life depletion, recovery, reward thresholds, boost expiration/non-stacking, widened collisions, mode-specific settings, independent best scores, legacy-score fallback, and challenge timing/expiry.
 
 With the local server running:
 
 - `/tests/model-smoke.html` downloads the real model, runs blank-frame inference on WebGL, and reports PASS/FAIL without camera permission.
-- `/tests/gameplay-smoke.html` uses a synthetic fingertip with the production UI, game loop, and renderer. Select **Start** and verify 3–2–1, Pause/Resume, scoring, and level changes. **Remove test hand** should cost one life; **Restore test hand** permits the next countdown. **Drop test ball** forces a miss during play to verify the selected mode’s life limit; in timed mode, verify the clock keeps running after a miss and ends at zero; **Restart** resets; **Stop** clears the canvas. Test scores are not saved. Enable sound to check countdown/bounce/level/game-over cues, mute during play, and expand the controls/help panel.
+- `/tests/gameplay-smoke.html` uses a synthetic fingertip with the production UI, game loop, and renderer. Select **Start** and verify 3–2–1, Pause/Resume, scoring, and level changes. **Remove test hand** should cost one life; **Restore test hand** permits the next countdown. **Drop test ball** forces a miss during play to verify the selected mode’s life limit; in timed mode, verify the clock keeps running after a miss and ends at zero; **Restart** resets; **Stop** clears the canvas. Use **Preview setup state** to inspect loading, permission denied, no-camera, and generic error guidance. Test scores are not saved. Enable sound to check countdown/bounce/level/game-over cues, mute during play, and expand the controls/help panel.
 - In the main app, test camera allow/deny, Stop during loading, left/right marker alignment, losing a hand, game-over, Restart, Stop, and mobile resizing.
+
+## Screenshots
+
+Actual interface screenshots with no camera feed or personal information:
+
+![Desktop interface](docs/screenshots/desktop.jpg)
+
+<details>
+<summary>Mobile interface (390px)</summary>
+
+![Mobile interface](docs/screenshots/mobile.jpg)
+
+</details>
+
+See [release validation notes](docs/release-validation.md) for checks performed and remaining manual testing.
 
 ## Limitations and next steps
 
@@ -144,8 +191,7 @@ Live tracking accuracy and frame rate depend on lighting, occlusion, camera late
 
 Only one hand and one ball are supported. One ball remains in play at a time; multiplayer is not included. Boosts are automatic milestone rewards, not collectible objects. Mode balance and boost durations need physical-hand playtesting across devices. Best scores are local to this browser/profile, not an online leaderboard, and cannot persist if storage is blocked. Audible quality and loudness need listening checks on target devices; browser/OS audio restrictions can still silence effects. Future work can tune tracking stability and collision feel using physical webcam testing across devices.
 
-Tip: Normal mode is recommended for first-time players.
-Added a tip for using Easy mode for familiarization with hand tracking.
+Start with Easy to get familiar with tracking, then try Normal for the classic pace.
 Tip: Hard mode is best after you are comfortable with tracking accuracy.
 
 Audio reference: [Web Audio best practices](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Best_practices).

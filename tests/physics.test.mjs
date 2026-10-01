@@ -285,3 +285,15 @@ test('pause freezes power-up duration and restart removes effects', () => {
   assert.equal(loop.game.powerUps.nextScore, 8);
   loop.stop();
 });
+
+test('unchanged frames do not repeatedly notify the UI', () => {
+  const { loop, frame, states } = loopHarness();
+  frame(0, null);
+  const count = states.length;
+  frame(16, null);
+  frame(32, null);
+  assert.equal(states.length, count);
+  loop.pause();
+  assert.equal(states.at(-1).state, 'paused');
+  loop.stop();
+});
