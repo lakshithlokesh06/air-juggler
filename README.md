@@ -145,7 +145,7 @@ Live tracking accuracy and frame rate depend on lighting, occlusion, camera late
 Only one hand and one ball are supported. One ball remains in play at a time; multiplayer is not included. Boosts are automatic milestone rewards, not collectible objects. Mode balance and boost durations need physical-hand playtesting across devices. Best scores are local to this browser/profile, not an online leaderboard, and cannot persist if storage is blocked. Audible quality and loudness need listening checks on target devices; browser/OS audio restrictions can still silence effects. Future work can tune tracking stability and collision feel using physical webcam testing across devices.
 
 Tip: Normal mode is recommended for first-time players.
-Tip: Use Easy mode to get familiar with hand tracking before trying Hard mode.
+
 
 Audio reference: [Web Audio best practices](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Best_practices).
 
