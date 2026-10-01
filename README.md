@@ -146,6 +146,7 @@ Only one hand and one ball are supported. One ball remains in play at a time; mu
 
 Tip: Normal mode is recommended for first-time players.
 Added a tip for using Easy mode for familiarization with hand tracking.
+Tip: Hard mode is best after you are comfortable with tracking accuracy.
 
 Audio reference: [Web Audio best practices](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Best_practices).
 
